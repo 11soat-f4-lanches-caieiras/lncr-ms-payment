@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 @Component
 @ConfigurationProperties(prefix = "lncr.mercado-pago")
 public class MercadoPagoConfig {
-    private String locationPrefix;
+    private  String locationPrefix;
     private String oAuthUrl;
     private String ordersUrl;
     private String clientId;
