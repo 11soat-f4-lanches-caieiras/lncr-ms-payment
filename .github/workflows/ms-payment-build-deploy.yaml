@@ -1,0 +1,282 @@
+name: Construir e Upload da Aplicação lncr-ms-payment
+on:
+  repository_dispatch:
+    types: [infra-base-completed]
+
+  workflow_dispatch:
+    inputs:
+      only-helm-deploy:
+        description: 'Only Helm Deploy (skip build and upload)'
+        required: false
+        default: false
+        type: boolean
+
+  workflow_call:
+    inputs:
+      branch:
+        description: 'Branch to deploy'
+        required: false
+        default: 'develop'
+        type: string
+
+env:
+  #variáveis
+  AWS_DEFAULT_REGION: ${{ vars.AWS_DEFAULT_REGION }}
+  DOCKERFILE_PATH: "${{ vars.MS_DOMAIN }}/Dockerfile"
+  DOCKERFILE_TEMPLATE_URL: ${{ vars.DOCKERFILE_TEMPLATE_URL }}
+  ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+  EKS_CLUSTER: ${{ vars.EKS_CLUSTER }}
+  JACOCO_REPORT_PATH: "${{ vars.MS_DOMAIN }}/target/site/jacoco/jacoco.xml"
+  LNCR_BASE_URL: ${{ vars.LNCR_BASE_URL }}
+  LNCR_EXTERNAL_URL: ${{ vars.LNCR_EXTERNAL_URL }}
+  MAVEN_POM_PATH: "${{ vars.MS_DOMAIN }}/pom.xml"
+  MAVEN_SETTINGS_PATH: "${{ vars.MS_DOMAIN }}/maven_settings.xml"
+  MAVEN_TEMPLATE_URL: ${{ vars.MAVEN_TEMPLATE_URL }}
+  MS_DOMAIN: ${{ vars.MS_DOMAIN }}
+
+  # secrets
+  LNCR_MAVEN_ACTOR: ${{ secrets.LNCR_MAVEN_ACTOR }}
+  LNCR_MAVEN_PAT: ${{ secrets.LNCR_MAVEN_PAT }}
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  GITHUB_ACTOR: ${{ github.actor}}
+  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+
+jobs:
+  build-and-upload:
+    name: Validação Construção e Upload da Imagem Docker
+    runs-on: ubuntu-latest
+    #runs-on: codebuild-github-lncr-app-${{ github.run_id }}-${{ github.run_attempt }}
+    #Disparado via repository_dispatch do repositório lncr-iac
+    if: ${{ (github.event_name == 'workflow_dispatch' || github.event_name == 'repository_dispatch') && !inputs.only-helm-deploy }}
+    environment:
+      name: ${{ github.ref_name == 'master' && 'prd' || 'dev' }}
+    steps:
+      - name: Fazer checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Configurar templates Docker e Maven
+        env:
+          DOCKERFILE_TEMPLATE_URL: ${{ env.DOCKERFILE_TEMPLATE_URL }}
+          DOCKERFILE_PATH: ${{ env.DOCKERFILE_PATH }}
+          MAVEN_TEMPLATE_URL: ${{ env.MAVEN_TEMPLATE_URL }}
+          MAVEN_SETTINGS_PATH: ${{ env.MAVEN_SETTINGS_PATH }}
+          MS_DOMAIN: ${{ env.MS_DOMAIN }}
+          LNCR_MAVEN_PAT: ${{ env.LNCR_MAVEN_PAT }}
+        run: |
+          BIN=$PWD
+          echo "Obtendo template do maven_settings.xml"
+          curl -s -H "Authorization: token ${LNCR_MAVEN_PAT}" -o $BIN/$MAVEN_SETTINGS_PATH "${MAVEN_TEMPLATE_URL}" 
+          
+          echo "Obtendo template do Docker File"
+          curl -s -H "Authorization: token ${LNCR_MAVEN_PAT}" -o $BIN/$DOCKERFILE_PATH "${DOCKERFILE_TEMPLATE_URL}"
+          
+          echo "Configurando Dockerfile para o dominio $MS_DOMAIN"
+          sed -i "s/##MS_DOMAIN##/$MS_DOMAIN/g" $BIN/$DOCKERFILE_PATH
+
+      - name: Cache SonarQube packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Cache Maven Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Análise SonarQube
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          MAVEN_SETTINGS_PATH: ${{ env.MAVEN_SETTINGS_PATH }}
+          MAVEN_POM_PATH: ${{ env.MAVEN_POM_PATH }}
+        run: |
+          mvn -B clean verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+          -s ${MAVEN_SETTINGS_PATH} \
+          -f ${MAVEN_POM_PATH} \
+          -Pcoverage
+
+      - name: Cobertura de Testes Jacoco & Sonar
+        env:
+          JACOCO_REPORT_PATH: ${{ env.JACOCO_REPORT_PATH }}
+        run: |
+          if [ -f $JACOCO_REPORT_PATH ]; then
+            COVERED=$(grep -oP 'counter type="INSTRUCTION"[^>]+covered="\K[0-9]+' $JACOCO_REPORT_PATH | awk '{s+=$1} END {print s}')
+            MISSED=$(grep -oP 'counter type="INSTRUCTION"[^>]+missed="\K[0-9]+' $JACOCO_REPORT_PATH | awk '{s+=$1} END {print s}')
+            if [[ "$COVERED" =~ ^[0-9]+$ ]] && [[ "$MISSED" =~ ^[0-9]+$ ]] && [ $((COVERED + MISSED)) -ne 0 ]; then
+              PERCENT=$(awk "BEGIN {printf \"%.2f\", 100 * $COVERED / ($COVERED + $MISSED)}")
+              echo "Cobertura de instruções: $PERCENT%"
+              echo "COVERAGE_PERCENTAGE=$PERCENT" >> $GITHUB_ENV
+              echo "MISSED=$MISSED" >> $GITHUB_ENV
+            else
+              echo "Valores de cobertura não encontrados. Falhando o build."
+              exit 1
+            fi
+          else
+            echo "Relatório Jacoco não encontrado."
+          fi
+      #
+      #      - name: Login no Docker Hub
+      #        uses: docker/login-action@v3
+      #        with:
+      #          username: ${{ env.DOCKER_USERNAME }}
+      #          password: ${{ env.DOCKER_PASSWORD }}
+      #
+      - name: Definir Caminhos e Variáveis de Ambiente
+        env:
+          DOMAIN: ${{ env.DOMAIN}}
+        run: |
+          echo "Compondo variáveis de ambiente..."
+          COMMIT_HASH=$(git rev-parse --short HEAD)
+          IMAGE_NAME=lncr-$DOMAIN-$COMMIT_HASH
+
+          echo "Exportando variáveis de ambiente..."
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+          echo "COMMIT_HASH=$COMMIT_HASH" >> $GITHUB_ENV
+          
+          
+          echo "Exportando variáveis de output..."
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_OUTPUT
+          echo "COMMIT_HASH=$COMMIT_HASH" >> $GITHUB_OUTPUT
+      #
+      #      - name: Login no Amazon ECR
+      #        id: login-ecr
+      #        uses: aws-actions/amazon-ecr-login@v2
+      #
+      - name: Construir imagem Docker
+        env:
+          DOCKERFILE_PATH: ${{ env.DOCKERFILE_PATH }}
+        run: |
+          echo "Criando imagem da aplicação..."
+          docker build -t ${{ env.IMAGE_NAME }} -f $DOCKERFILE_PATH .
+#
+#      - name: Marcar imagem para ECR
+#        run: |
+#          ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}
+#          IMAGE_TAG=${{ env.COMMIT_HASH }}
+#
+#          echo "Marcando imagem para ECR..."
+#          docker tag ${{ env.IMAGE_NAME }} $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG
+#          docker tag ${{ env.IMAGE_NAME }} $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:latest
+#
+#          echo "ECR_REGISTRY=$ECR_REGISTRY" >> $GITHUB_ENV
+#
+#      - name: Enviar imagem para ECR
+#        run: |
+#          IMAGE_TAG=${{ env.COMMIT_HASH }}
+#          docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG
+#          docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+#
+#          echo "Imagem enviada para ECR: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG,latest"
+##  approve-after-build:
+##    name: Manual Approval (after build)
+##    runs-on: ubuntu-latest
+##    needs: build-and-upload
+##    if: ${{ !inputs.only-helm-deploy }}
+##    steps:
+##      - name: Manual Approval
+##        uses: trstringer/manual-approval@v1
+##        with:
+##          secret: ${{ github.TOKEN }}
+##          approvers: gustavo-log,titoparizotto
+##          minimum-approvals: 1
+##          issue-title: "Deploy Infrastructure to Production"
+##          issue-body: "Please approve the deployment of infrastructure changes."
+##
+##  approve-helm-only:
+##    name: Manual Approval (helm only)
+##    runs-on: ubuntu-latest
+##    if: ${{ inputs.only-helm-deploy }}
+##    steps:
+##      - name: Manual Approval
+##        uses: trstringer/manual-approval@v1
+##        with:
+##          secret: ${{ github.token }}
+##          approvers: gustavo-log,titoparizotto
+##          minimum-approvals: 1
+##          issue-title: "Deploy Infrastructure to Production"
+##          issue-body: "Please approve the deployment of infrastructure changes."
+#  deploy:
+#    name: Deploy no Cluster Kubernetes
+#    runs-on: codebuild-github-lncr-app-${{ github.run_id }}-${{ github.run_attempt }}
+#    #needs: [approve-after-build, approve-helm-only]
+#    #if: ${{ always() && (needs.approve-after-build.result == 'success' || needs.approve-helm-only.result == 'success') }}
+#    environment:
+#      name: ${{ github.ref_name == 'master' && 'prd' || 'dev' }}
+#    steps:
+#      - name: Fazer checkout do código
+#        uses: actions/checkout@v4
+#
+#      - name: Instalar Helm
+#        run: |
+#          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+#
+#      - name: Configurar kubectl
+#        run: |
+#          aws eks update-kubeconfig --region ${{ vars.AWS_DEFAULT_REGION }} --name ${{ vars.EKS_CLUSTER }}
+#
+#      - name: Obter subredes do EKS
+#        run: |
+#          EKS_SUBNETS=$(aws eks describe-cluster --name ${{ vars.EKS_CLUSTER }} --query 'cluster.resourcesVpcConfig.subnetIds' --output text | sed 's/\t/--/g')
+#          echo "EKS_SUBNETS=$EKS_SUBNETS" >> $GITHUB_ENV
+#
+#      - name: Deploy com Helm
+#        run: |
+#          COMMIT_HASH="$(git rev-parse --short HEAD)"
+#          ECR_REGISTRY="080145351546.dkr.ecr.us-east-1.amazonaws.com"
+#
+#          printf -v SUBNET_ARG -- '--set-string service.nlb.subnets=%s' "${{ env.EKS_SUBNETS }}"
+#
+#          helm upgrade --install lncr-app ./iac/kubernetes \
+#            --set app.image.repository="$ECR_REGISTRY"/${{ env.ECR_REPOSITORY }} \
+#            --set app.image.tag="$COMMIT_HASH" \
+#            --set app.containerName=lncr-app \
+#            --set app.baseUrl="${{ env.LNCR_BASE_URL }}" \
+#            --set app.externalUrl="${{ env.LNCR_EXTERNAL_URL }}" \
+#            --set app.mercadopago.oauthUrl="${{ env.MERCADOPAGO_OAUTH_URL }}" \
+#            --set app.mercadopago.ordersUrl="${{ env.MERCADOPAGO_ORDERS_URL }}" \
+#            --set app.mercadopago.secretId="${{ env.MERCADOPAGO_SECRET_ID }}" \
+#            --set app.mercadopago.clientId="${{ env.MERCADOPAGO_CLIENT_ID }}" \
+#            --set app.mercadopago.posId="${{ env.MERCADOPAGO_POS_ID }}" \
+#            $SUBNET_ARG \
+#            --set secrets.oauthAdminClientId="${{ env.LNCR_OAUTH_ADMIN_CLIENT_ID }}"\
+#            --set secrets.oauthAdminClientSecret="${{ env.LNCR_OAUTH_ADMIN_CLIENT_SECRET }}" \
+#            --set secrets.oauthMonitorClientId="${{ env.LNCR_OAUTH_MONITOR_CLIENT_ID }}" \
+#            --set secrets.oauthMonitorClientSecret="${{ env.LNCR_OAUTH_MONITOR_CLIENT_SECRET }}" \
+#            --set secrets.oauthTotemClientId="${{ env.LNCR_OAUTH_TOTEM_CLIENT_ID }}" \
+#            --set secrets.oauthTotemClientSecret="${{ env.LNCR_OAUTH_TOTEM_CLIENT_SECRET }}" \
+#            --set secrets.oauthSecretKey="${{ env.LNCR_OAUTH_SECRET_KEY }}" \
+#            --set secrets.mercadopagoClientId="${{ env.MERCADOPAGO_CLIENT_ID }}" \
+#            --set secrets.mercadopagoSecretId="${{ env.MERCADOPAGO_SECRET_ID }}" \
+#            --set secrets.mercadopagoPosId="${{ env.MERCADOPAGO_POS_ID }}" \
+#            --set secrets.postgresUrl="${{ env.POSTGRES_URL }}" \
+#            --set secrets.postgresUser="${{ env.POSTGRES_USER }}" \
+#            --set secrets.postgresPassword="${{ env.POSTGRES_PASSWORD }}" \
+#            --set app.name=lncr-app \
+#            --namespace fiap --create-namespace \
+#            --force
+#
+#      - name: Trigger lncr-iac-configuration deployment
+#        uses: peter-evans/repository-dispatch@v2
+#        if: github.event_name == 'repository_dispatch'
+#        with:
+#          token: ${{ secrets.REPO_TOKEN}}
+#          repository: 11soat-f3-lanches-caieiras/lncr-iac
+#          event-type: infra-iac-completed
+#          client-payload: |
+#            {
+#              "branch": "${{ github.ref_name }}",
+#              "commit": "${{ github.sha }}"
+#            }
