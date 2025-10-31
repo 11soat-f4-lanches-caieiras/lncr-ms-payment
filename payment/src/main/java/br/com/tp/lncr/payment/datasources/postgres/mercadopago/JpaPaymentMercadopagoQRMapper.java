@@ -23,18 +23,19 @@ public class JpaPaymentMercadopagoQRMapper {
 
     public JpaMercadopagoQrEntity mercadopagoQrDtoToJpa(PaymentMercadopagoQrDTO dto) {
         if (dto == null) return null;
-        return new JpaMercadopagoQrEntity(
-                dto.getId(),
-                dto.getOrderId(),
-                PaymentStatus.fromDescription(dto.getStatus()).getId(),
-                dto.getAmount(),
-                dto.getPaymentProvider(),
-                dto.getPaymentMethod(),
-                dto.getExternalPaymentId(),
-                dto.getCreated(),
-                dto.getUpdated(),
-                dto.getMeliId(),
-                dto.getQrData());
+        return JpaMercadopagoQrEntity.builder()
+                .id(dto.getId())
+                .orderId(dto.getOrderId())
+                .status(PaymentStatus.fromDescription(dto.getStatus()).getId())
+                .amount(dto.getAmount())
+                .paymentProvider(dto.getPaymentProvider())
+                .paymentMethod(dto.getPaymentMethod())
+                .externalPaymentId(dto.getExternalPaymentId())
+                .created(dto.getCreated())
+                .updated(dto.getUpdated())
+                .meliId(dto.getMeliId())
+                .qrData(dto.getQrData())
+                .build();
     }
 }
 

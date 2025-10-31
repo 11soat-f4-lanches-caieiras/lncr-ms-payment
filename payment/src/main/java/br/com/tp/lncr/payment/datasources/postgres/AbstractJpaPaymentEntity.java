@@ -31,19 +31,78 @@ public abstract class AbstractJpaPaymentEntity {
     private LocalDateTime created;
     private LocalDateTime updated;
 
-    protected AbstractJpaPaymentEntity(Integer id, Integer orderId, Integer status, Double amount, String paymentProvider, String paymentMethod, String externalPaymentId, LocalDateTime created, LocalDateTime updated) {
-        this.id = id;
-        this.orderId = orderId;
-        this.statusId = status;
-        this.amount = amount;
-        this.paymentProvider = paymentProvider;
-        this.paymentMethod = paymentMethod;
-        this.externalPaymentId = externalPaymentId;
-        this.created = created;
-        this.updated = updated;
+    protected AbstractJpaPaymentEntity(BaseBuilder<?> builder) {
+        this.id = builder.id;
+        this.orderId = builder.orderId;
+        this.statusId = builder.statusId;
+        this.amount = builder.amount;
+        this.paymentProvider = builder.paymentProvider;
+        this.paymentMethod = builder.paymentMethod;
+        this.externalPaymentId = builder.externalPaymentId;
+        this.created = builder.created;
+        this.updated = builder.updated;
     }
 
     protected AbstractJpaPaymentEntity() {
+    }
+
+    public abstract static class BaseBuilder<T extends BaseBuilder<T>> {
+        protected Integer id;
+        protected Integer orderId;
+        protected Integer statusId;
+        protected Double amount;
+        protected String paymentProvider;
+        protected String paymentMethod;
+        protected String externalPaymentId;
+        protected LocalDateTime created;
+        protected LocalDateTime updated;
+
+        protected abstract T self();
+
+        public T id(Integer id) {
+            this.id = id;
+            return self();
+        }
+
+        public T orderId(Integer orderId) {
+            this.orderId = orderId;
+            return self();
+        }
+
+        public T statusId(Integer statusId) {
+            this.statusId = statusId;
+            return self();
+        }
+
+        public T amount(Double amount) {
+            this.amount = amount;
+            return self();
+        }
+
+        public T paymentProvider(String paymentProvider) {
+            this.paymentProvider = paymentProvider;
+            return self();
+        }
+
+        public T paymentMethod(String paymentMethod) {
+            this.paymentMethod = paymentMethod;
+            return self();
+        }
+
+        public T externalPaymentId(String externalPaymentId) {
+            this.externalPaymentId = externalPaymentId;
+            return self();
+        }
+
+        public T created(LocalDateTime created) {
+            this.created = created;
+            return self();
+        }
+
+        public T updated(LocalDateTime updated) {
+            this.updated = updated;
+            return self();
+        }
     }
 
     public Integer getId() {

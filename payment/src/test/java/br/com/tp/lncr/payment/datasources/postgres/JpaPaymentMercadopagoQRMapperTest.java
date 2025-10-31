@@ -17,10 +17,19 @@ class JpaPaymentMercadopagoQRMapperTest {
     void jpaMercadopagoQrToDTOConvertsCorrectly() {
         LocalDateTime created = LocalDateTime.now();
         LocalDateTime updated = LocalDateTime.now();
-        JpaMercadopagoQrEntity entity = new JpaMercadopagoQrEntity(
-                1, 100, 2, 50.0, "mercadopago", "qrcode",
-                "ext123", created, updated, "meli123", "qrdata123"
-        );
+        JpaMercadopagoQrEntity entity = JpaMercadopagoQrEntity.builder()
+                .id(1)
+                .orderId(100)
+                .status(2)
+                .amount(50.0)
+                .paymentProvider("mercadopago")
+                .paymentMethod("qrcode")
+                .externalPaymentId("ext123")
+                .created(created)
+                .updated(updated)
+                .meliId("meli123")
+                .qrData("qrdata123")
+                .build();
 
         PaymentMercadopagoQrDTO dto = mapper.jpaMercadopagoQrToDTO(entity);
 
@@ -46,10 +55,9 @@ class JpaPaymentMercadopagoQRMapperTest {
 
     @Test
     void jpaMercadopagoQrToDTOWithNullFieldsConvertsCorrectly() {
-        JpaMercadopagoQrEntity entity = new JpaMercadopagoQrEntity(
-                null, null, 1, null, null, null,
-                null, null, null, null, null
-        );
+        JpaMercadopagoQrEntity entity = JpaMercadopagoQrEntity.builder()
+                .status(1)
+                .build();
 
         PaymentMercadopagoQrDTO dto = mapper.jpaMercadopagoQrToDTO(entity);
 
@@ -162,10 +170,19 @@ class JpaPaymentMercadopagoQRMapperTest {
 
     @Test
     void mapperHandlesEmptyStringsCorrectly() {
-        JpaMercadopagoQrEntity entity = new JpaMercadopagoQrEntity(
-                1, 100, 2, 50.0, "", "",
-                "", LocalDateTime.now(), LocalDateTime.now(), "", ""
-        );
+        JpaMercadopagoQrEntity entity = JpaMercadopagoQrEntity.builder()
+                .id(1)
+                .orderId(100)
+                .status(2)
+                .amount(50.0)
+                .paymentProvider("")
+                .paymentMethod("")
+                .externalPaymentId("")
+                .created(LocalDateTime.now())
+                .updated(LocalDateTime.now())
+                .meliId("")
+                .qrData("")
+                .build();
 
         PaymentMercadopagoQrDTO dto = mapper.jpaMercadopagoQrToDTO(entity);
 
@@ -179,10 +196,19 @@ class JpaPaymentMercadopagoQRMapperTest {
 
     @Test
     void mapperHandlesZeroValuesCorrectly() {
-        JpaMercadopagoQrEntity entity = new JpaMercadopagoQrEntity(
-                0, 0, 0, 0.0, "mercadopago", "qrcode",
-                "ext123", LocalDateTime.now(), LocalDateTime.now(), "meli123", "qrdata123"
-        );
+        JpaMercadopagoQrEntity entity = JpaMercadopagoQrEntity.builder()
+                .id(0)
+                .orderId(0)
+                .status(0)
+                .amount(0.0)
+                .paymentProvider("mercadopago")
+                .paymentMethod("qrcode")
+                .externalPaymentId("ext123")
+                .created(LocalDateTime.now())
+                .updated(LocalDateTime.now())
+                .meliId("meli123")
+                .qrData("qrdata123")
+                .build();
 
         PaymentMercadopagoQrDTO dto = mapper.jpaMercadopagoQrToDTO(entity);
 

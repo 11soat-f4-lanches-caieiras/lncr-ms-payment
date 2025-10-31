@@ -188,7 +188,18 @@ class JpaMercadoPagoQrRepositoryImplTest {
     }
 
     private JpaMercadopagoQrEntity createEntity() {
-        return new JpaMercadopagoQrEntity(1, 100, 2, 50.0, "mercadopago", "qrcode",
-                "ext123", LocalDateTime.now(), LocalDateTime.now(), "meli123", "qrdata123");
+        return JpaMercadopagoQrEntity.builder()
+                .id(1)
+                .orderId(100)
+                .status(2)
+                .amount(50.0)
+                .paymentProvider("mercadopago")
+                .paymentMethod("qrcode")
+                .externalPaymentId("ext123")
+                .created(LocalDateTime.now())
+                .updated(LocalDateTime.now())
+                .meliId("meli123")
+                .qrData("qrdata123")
+                .build();
     }
 }

@@ -3,7 +3,6 @@ package br.com.tp.lncr.payment.datasources.postgres.mercadopago;
 import br.com.tp.lncr.payment.datasources.postgres.AbstractJpaPaymentEntity;
 import jakarta.persistence.*;
 
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name="payment_mercadopago",
@@ -19,12 +18,44 @@ public class JpaMercadopagoQrEntity extends AbstractJpaPaymentEntity {
         super();
     }
 
-    public JpaMercadopagoQrEntity(Integer id, Integer orderId, Integer status, Double amount, String paymentProvider, String paymentMethod, String externalPaymentId, LocalDateTime _created, LocalDateTime _updated, String meliId, String qrData) {
-        super(id, orderId, status, amount, paymentProvider, paymentMethod, externalPaymentId, _created, _updated);
-        this.meliId = meliId;
-        this.qrData = qrData;
+    private JpaMercadopagoQrEntity(Builder builder) {
+        super(builder);
+        this.meliId = builder.meliId;
+        this.qrData = builder.qrData;
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder extends BaseBuilder<Builder> {
+        private String meliId;
+        private String qrData;
+
+        @Override
+        protected Builder self() {
+            return this;
+        }
+
+        public Builder meliId(String meliId) {
+            this.meliId = meliId;
+            return this;
+        }
+
+        public Builder qrData(String qrData) {
+            this.qrData = qrData;
+            return this;
+        }
+
+        public Builder status(Integer status) {
+            this.statusId = status;
+            return this;
+        }
+
+        public JpaMercadopagoQrEntity build() {
+            return new JpaMercadopagoQrEntity(this);
+        }
+    }
 
     public String getMeliId() {
         return meliId;

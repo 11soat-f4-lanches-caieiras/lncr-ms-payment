@@ -1,5 +1,6 @@
 package br.com.tp.lncr.payment.configs;
 
+import br.com.tp.lncr.core.dtos.payment.PaymentMercadopagoQrDTO;
 import br.com.tp.lncr.payment.dataproxy.PaymentMercadoPagoQrDataProxy;
 import br.com.tp.lncr.payment.datasources.postgres.mercadopago.JpaMercadoPagoQrRepositoryImpl;
 import br.com.tp.lncr.payment.datasources.postgres.mercadopago.JpaPaymentMercadopagoQRMapper;
@@ -87,7 +88,7 @@ public class MercadoPagoConfig {
     }
 
     @Bean
-    public PaymentController paymentMercadoPagoQrController(PaymentMercadopagoQRMapper paymentMercadopagoQRMapper){
+    public PaymentController<PaymentMercadopagoQrDTO> paymentMercadoPagoQrController(PaymentMercadopagoQRMapper paymentMercadopagoQRMapper){
         return new PaymentMercadoPagoQrControllerImpl(paymentMercadopagoQRMapper);
     }
 

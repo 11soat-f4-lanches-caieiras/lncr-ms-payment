@@ -23,7 +23,7 @@ public class PaymentMercadoPagoQrRestRestControllerImpl implements PaymentRestCo
     public final MercadoPagoConfig mercadoPagoConfig;
 
 
-    public PaymentMercadoPagoQrRestRestControllerImpl(PaymentController paymentMercadoPagoQrController, PaymentMercadoPagoQrDataProxy paymentMercadoPagoQrDataProxy, MercadoPagoConfig mercadoPagoConfig) {
+    public PaymentMercadoPagoQrRestRestControllerImpl(PaymentController<PaymentMercadopagoQrDTO> paymentMercadoPagoQrController, PaymentMercadoPagoQrDataProxy paymentMercadoPagoQrDataProxy, MercadoPagoConfig mercadoPagoConfig) {
         this.paymentMercadoPagoQrController = paymentMercadoPagoQrController;
         this.paymentMercadoPagoQrDataProxy = paymentMercadoPagoQrDataProxy;
         this.mercadoPagoConfig = mercadoPagoConfig;

@@ -16,17 +16,28 @@ class JpaMercadopagoQrEntityTest {
         assertNotNull(entity);
         assertNull(entity.getMeliId());
         assertNull(entity.getQrData());
+        assertNull(entity.getId());
+        assertNull(entity.getOrderId());
     }
 
     @Test
-    void parameterizedConstructorSetsAllFields() {
+    void builderSetsAllFields() {
         LocalDateTime created = LocalDateTime.now();
         LocalDateTime updated = LocalDateTime.now();
 
-        JpaMercadopagoQrEntity entity = new JpaMercadopagoQrEntity(
-                1, 100, 2, 50.0, "mercadopago", "qrcode",
-                "ext123", created, updated, "meli123", "qrdata123"
-        );
+        JpaMercadopagoQrEntity entity = JpaMercadopagoQrEntity.builder()
+                .id(1)
+                .orderId(100)
+                .status(2)
+                .amount(50.0)
+                .paymentProvider("mercadopago")
+                .paymentMethod("qrcode")
+                .externalPaymentId("ext123")
+                .created(created)
+                .updated(updated)
+                .meliId("meli123")
+                .qrData("qrdata123")
+                .build();
 
         assertEquals(1, entity.getId());
         assertEquals(100, entity.getOrderId());
@@ -80,11 +91,20 @@ class JpaMercadopagoQrEntityTest {
     }
 
     @Test
-    void constructorWithNullValues() {
-        JpaMercadopagoQrEntity entity = new JpaMercadopagoQrEntity(
-                null, null, null, null, null, null,
-                null, null, null, null, null
-        );
+    void builderWithNullValues() {
+        JpaMercadopagoQrEntity entity = JpaMercadopagoQrEntity.builder()
+                .id(null)
+                .orderId(null)
+                .status(null)
+                .amount(null)
+                .paymentProvider(null)
+                .paymentMethod(null)
+                .externalPaymentId(null)
+                .created(null)
+                .updated(null)
+                .meliId(null)
+                .qrData(null)
+                .build();
 
         assertNull(entity.getId());
         assertNull(entity.getOrderId());

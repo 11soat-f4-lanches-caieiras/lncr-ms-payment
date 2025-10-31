@@ -127,6 +127,23 @@ jobs:
           else
             echo "Relatório Jacoco não encontrado."
           fi
+
+      - name: Validação de Cobertura
+        env:
+          COVERAGE_THRESHOLD: 80.0
+          COVERAGE_PERCENTAGE: ${{ env.COVERAGE_PERCENTAGE }}
+        run: |
+          if [ -z "$COVERAGE_PERCENTAGE" ]; then
+            echo "Porcentagem de cobertura não disponível. Falhando o build."
+            exit 1
+          fi
+          COMP=$(awk "BEGIN {print ($COVERAGE_PERCENTAGE < $COVERAGE_THRESHOLD)}")
+          if [ "$COMP" -eq 1 ]; then
+            echo "Cobertura de código $COVERAGE_PERCENTAGE% é menor que o limite de $COVERAGE_THRESHOLD%. Falhando o build."
+            exit 1
+          else
+           echo "Cobertura de código $COVERAGE_PERCENTAGE% atende ao limite de $COVERAGE_THRESHOLD%."
+          fi
       #
       #      - name: Login no Docker Hub
       #        uses: docker/login-action@v3
