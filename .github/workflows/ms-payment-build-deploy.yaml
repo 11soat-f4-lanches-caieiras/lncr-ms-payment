@@ -22,6 +22,7 @@ on:
 env:
   #variáveis
   AWS_DEFAULT_REGION: ${{ vars.AWS_DEFAULT_REGION }}
+  BASE_IMAGE: ${{ vars.BASE_IMAGE }}
   DOCKERFILE_PATH: "${{ vars.MS_DOMAIN }}/Dockerfile"
   DOCKERFILE_TEMPLATE_URL: ${{ vars.DOCKERFILE_TEMPLATE_URL }}
   ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
@@ -66,6 +67,7 @@ jobs:
 
       - name: Configurar templates Docker e Maven
         env:
+          BASE_IMAGE: ${{ env.BASE_IMAGE }}
           DOCKERFILE_TEMPLATE_URL: ${{ env.DOCKERFILE_TEMPLATE_URL }}
           DOCKERFILE_PATH: ${{ env.DOCKERFILE_PATH }}
           MAVEN_TEMPLATE_URL: ${{ env.MAVEN_TEMPLATE_URL }}
@@ -80,8 +82,13 @@ jobs:
           echo "Obtendo template do Docker File"
           curl -s -H "Authorization: token ${LNCR_MAVEN_PAT}" -o $BIN/$DOCKERFILE_PATH "${DOCKERFILE_TEMPLATE_URL}"
           
-          echo "Configurando Dockerfile para o dominio $MS_DOMAIN"
-          sed -i "s/##MS_DOMAIN##/$MS_DOMAIN/g" $BIN/$DOCKERFILE_PATH
+          if [ -z "$BASE_IMAGE" ]; then
+            BASE_IMAGE="eclipse-temurin:21-jre-alpine"
+            echo "Usando imagem default ${BASE_IMAGE} para o build."
+          fi
+
+          echo "Configurando Dockerfile para o dominio $MS_DOMAIN e imagem base $BASE_IMAGE"
+          sed -i "s/##MS_DOMAIN##/$MS_DOMAIN/g; s/##BASE_IMAGE##/$BASE_IMAGE/g;" $BIN/$DOCKERFILE_PATH
 
       - name: Cache SonarQube packages
         uses: actions/cache@v4
