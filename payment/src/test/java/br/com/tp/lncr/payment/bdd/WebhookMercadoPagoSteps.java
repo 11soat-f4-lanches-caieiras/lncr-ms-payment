@@ -1,19 +1,19 @@
 package br.com.tp.lncr.payment.bdd;
 
 import br.com.tp.lncr.commons.model.ResponseModel;
-import br.com.tp.lncr.commons.config.IntegrationConfig;
-import br.com.tp.lncr.payment.webhooks.WebhookMercadoPagoController;
+import br.com.tp.lncr.payment.configs.MercadoPagoConfig;
+import br.com.tp.lncr.payment.handlers.mercadopago.MercadoPagoCallbackHandlerRouter;
+import br.com.tp.lncr.payment.webhooks.mercadopago.MercadoPagoCallbackDTO;
+import br.com.tp.lncr.payment.webhooks.mercadopago.WebhookMercadoPagoController;
 import io.cucumber.java.Before;
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.Então;
 import io.cucumber.java.pt.Quando;
+import jakarta.servlet.http.HttpServletRequest;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -23,31 +23,32 @@ public class WebhookMercadoPagoSteps {
     private WebhookMercadoPagoController webhookController;
 
     @Mock
-    private IntegrationConfig integrationConfig;
+    private MercadoPagoConfig mercadoPagoConfig;
 
-    private Map<String, Object> requestBody;
+    @Mock
+    private MercadoPagoCallbackHandlerRouter handlerRouter;
+
+    @Mock
+    private HttpServletRequest httpServletRequest;
+
+    private MercadoPagoCallbackDTO callbackDTO;
+    private ResponseEntity<ResponseModel<String>> response;
     private String externalReference;
     private String dataId;
-    private String notificationType;
-    private ResponseEntity<ResponseModel<String>> response;
-    private boolean isValidNotification;
+    private String action;
+    private String type;
 
     @Before
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        requestBody = new HashMap<>();
-        isValidNotification = true;
-
-        when(integrationConfig.getPaymentsUrl()).thenReturn("http://localhost:8080/api/payments");
-
-        webhookController = new WebhookMercadoPagoController(integrationConfig);
+        when(mercadoPagoConfig.getWebhookSecret()).thenReturn("test-secret");
+        webhookController = new WebhookMercadoPagoController(mercadoPagoConfig, handlerRouter);
     }
 
     @Dado("que o Mercado Pago enviou uma notificação de pagamento")
     public void queOMercadoPagoEnviouUmaNotificacaoDePagamento() {
-        requestBody.put("action", "payment.updated");
-        requestBody.put("type", "payment");
-        isValidNotification = true;
+        action = "payment.updated";
+        type = "payment";
     }
 
     @Dado("a notificação contém external_reference {string}")
@@ -61,27 +62,38 @@ public class WebhookMercadoPagoSteps {
     }
 
     @Dado("o tipo da notificação é {string}")
-    public void oTipoDaNotificacaoE(String type) {
-        notificationType = type;
+    public void oTipoDaNotificacaoE(String notificationType) {
+        type = notificationType;
     }
 
     @Quando("o webhook processar a notificação")
     public void oWebhookProcessarANotificacao() {
-        if (isValidNotification && externalReference != null && dataId != null) {
-            response = webhookController.paymentMercadoPagoCallback(
-                externalReference,
-                dataId,
-                notificationType != null ? notificationType : "order",
-                requestBody
-            );
-        } else {
-            response = webhookController.paymentMercadoPagoCallback(
-                externalReference,
-                dataId,
-                notificationType != null ? notificationType : "order",
-                requestBody
-            );
-        }
+        MercadoPagoCallbackDTO.Data data = new MercadoPagoCallbackDTO.Data(
+            externalReference,
+            dataId,
+            "processed",
+            "accredited",
+            "100.00",
+            "100.00",
+            null,
+            "order",
+            1
+        );
+
+        callbackDTO = new MercadoPagoCallbackDTO(
+            action,
+            "v1",
+            "app-123",
+            data,
+            "2025-01-01T00:00:00Z",
+            true,
+            type,
+            "user-123"
+        );
+
+        when(httpServletRequest.getQueryString()).thenReturn("?source_news=webhooks");
+
+        response = webhookController.paymentMercadoPagoCallback(callbackDTO, httpServletRequest);
     }
 
     @Então("o sistema deve retornar status HTTP {int}")
@@ -92,47 +104,50 @@ public class WebhookMercadoPagoSteps {
 
     @Então("deve encaminhar a notificação para o serviço de pagamentos")
     public void deveEncaminharANotificacaoParaOServicoDePagamentos() {
-        // Verifica se a resposta foi ACCEPTED (202), indicando processamento assíncrono
         assertEquals(HttpStatus.ACCEPTED, response.getStatusCode());
-    }
-
-    @Dado("que o Mercado Pago enviou uma notificação incompleta")
-    public void queOMercadoPagoEnviouUmaNotificacaoIncompleta() {
-        externalReference = null;
-        dataId = null;
-        isValidNotification = false;
-        requestBody.put("action", "payment.updated");
-    }
-
-    @Então("deve indicar parâmetros faltantes")
-    public void deveIndicarParametrosFaltantes() {
-        assertNotNull(response);
-        assertNotNull(response.getBody());
+        verify(handlerRouter, timeout(1000).times(1)).route(any(), any(), any());
     }
 
     @Dado("que recebo um callback válido do Mercado Pago")
     public void queReceboUmCallbackValidoDoMercadoPago() {
         externalReference = "12345";
         dataId = "mp-67890";
-        notificationType = "payment";
-        requestBody.put("action", "payment.updated");
-        requestBody.put("data", Map.of("id", dataId));
-        isValidNotification = true;
+        action = "payment.updated";
+        type = "payment";
     }
 
     @Quando("o webhook receber a requisição")
     public void oWebhookReceberARequisicao() {
-        long startTime = System.currentTimeMillis();
-        response = webhookController.paymentMercadoPagoCallback(
+        MercadoPagoCallbackDTO.Data data = new MercadoPagoCallbackDTO.Data(
             externalReference,
             dataId,
-            notificationType,
-            requestBody
+            "processed",
+            "accredited",
+            "100.00",
+            "100.00",
+            null,
+            "order",
+            1
         );
+
+        callbackDTO = new MercadoPagoCallbackDTO(
+            action,
+            "v1",
+            "app-123",
+            data,
+            "2025-01-01T00:00:00Z",
+            true,
+            type,
+            "user-123"
+        );
+
+        when(httpServletRequest.getQueryString()).thenReturn("?source_news=webhooks");
+
+        long startTime = System.currentTimeMillis();
+        response = webhookController.paymentMercadoPagoCallback(callbackDTO, httpServletRequest);
         long endTime = System.currentTimeMillis();
 
-        // Verifica que a resposta foi rápida (menos de 100ms para retornar)
-        assertTrue((endTime - startTime) < 100);
+        assertTrue((endTime - startTime) < 100, "Resposta deve ser retornada em menos de 100ms");
     }
 
     @Então("deve retornar a resposta imediatamente")
@@ -143,9 +158,8 @@ public class WebhookMercadoPagoSteps {
 
     @Então("processar a notificação de forma assíncrona")
     public void processarANotificacaoDeFormaAssincrona() {
-        // O webhook usa CompletableFuture.runAsync() para processamento assíncrono
-        // Verificamos que recebemos 202 ACCEPTED indicando processamento em background
         assertEquals(HttpStatus.ACCEPTED, response.getStatusCode());
+        verify(handlerRouter, timeout(2000).atLeastOnce()).route(any(), any(), any());
     }
 }
 

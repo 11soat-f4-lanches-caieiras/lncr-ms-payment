@@ -18,13 +18,14 @@ import org.springframework.stereotype.Component;
 @Component
 @ConfigurationProperties(prefix = "lncr.mercado-pago")
 public class MercadoPagoConfig {
-    private  String locationPrefix;
+    private String locationPrefix;
     private String oAuthUrl;
     private String ordersUrl;
     private String clientId;
     private String secretId;
     private String posId;
     private String expirationTime;
+    private String webhookSecret;
 
     public String getLocationPrefix() {
         return locationPrefix;
@@ -80,6 +81,14 @@ public class MercadoPagoConfig {
 
     public void setExpirationTime(String expirationTime) {
         this.expirationTime = expirationTime;
+    }
+
+    public String getWebhookSecret() {
+        return webhookSecret;
+    }
+
+    public void setWebhookSecret(String webhookSecret) {
+        this.webhookSecret = webhookSecret;
     }
 
     @Bean

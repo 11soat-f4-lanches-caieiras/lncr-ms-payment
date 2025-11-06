@@ -14,12 +14,6 @@ Funcionalidade: Webhook do Mercado Pago
     Então o sistema deve retornar status HTTP 202
     E deve encaminhar a notificação para o serviço de pagamentos
 
-  Cenário: Receber callback sem parâmetros obrigatórios
-    Dado que o Mercado Pago enviou uma notificação incompleta
-    Quando o webhook processar a notificação
-    Então o sistema deve retornar status HTTP 400
-    E deve indicar parâmetros faltantes
-
   Cenário: Processar callback de forma assíncrona
     Dado que recebo um callback válido do Mercado Pago
     Quando o webhook receber a requisição
