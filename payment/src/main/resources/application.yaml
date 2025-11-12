@@ -18,15 +18,15 @@ spring:
     serialization:
       write-dates-as-timestamps: false
 lncr:
-  internalUrl: "${LNCR_INTERNAL_URL}"
+  internalUrl: "${LNCR_ALB_URL:http://localhost:8080}"
   externalUrl: "${LNCR_EXTERNAL_URL}"
   integration:
-    customersUrl: "${INTEGRATION_URL_CUSTOMER}:http://localhost:8080/customers"
-    customerOrdersUrl: "${INTEGRATION_URL_CUSTOMER_ORDERS}:http://localhost:8080/customerOrders"
-    foodItemsUrl: "${INTEGRATION_URL_FOOD_ITEMS}:http://localhost:8080/foodItems"
-    kitchenOrdersUrl: "${INTEGRATION_URL_KITCHEN_ORDERS}:http://localhost:8080/kitchenOrders"
-    paymentsUrl: "${INTEGRATION_URL_PAYMENTS}:http://localhost:8080/payments"
-    notificationUrl: "${INTEGRATION_URL_NOTIFICATION}:http://localhost:8080/notifications"
+    customersUrl: "${lncr.internalUrl}/customers"
+    customerOrdersUrl: "${lncr.internalUrl}/customerOrders"
+    foodItemsUrl: "${lncr.internalUrl}/foodItems"
+    kitchenOrdersUrl: "${lncr.internalUrl}/kitchenOrders"
+    paymentsUrl: "${lncr.internalUrl}/payments"
+    notificationUrl: "${lncr.internalUrl}/notifications"
 
   mercadopago:
     locationPrefix: "${lncr.externalUrl}/payments/mercadoPago"

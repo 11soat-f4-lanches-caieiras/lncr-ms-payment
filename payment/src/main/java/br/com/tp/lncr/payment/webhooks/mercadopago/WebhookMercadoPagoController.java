@@ -33,7 +33,6 @@ public class WebhookMercadoPagoController {
         LoggerUtil.info("Query String: " + request.getQueryString());
         LoggerUtil.info("==================================================");
 
-
         CompletableFuture.runAsync(() -> webhookHandlerRouter.route(body, request, mercadoPagoConfig));
 
 
