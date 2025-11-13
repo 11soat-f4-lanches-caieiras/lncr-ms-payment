@@ -1,8 +1,12 @@
 spring:
   application:
-    name: lncr-ms-payment
+    name: payment
   server:
     port: "${SERVER_PORT:8080}"
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
   datasource:
     url: "${POSTGRES_URL}"
     username: "${POSTGRES_USER}"
@@ -13,21 +17,21 @@ spring:
       ddl-auto: update
       show-sql: true
       format_sql: true
-  jackson:
-    default-property-inclusion: non_null
-    serialization:
-      write-dates-as-timestamps: false
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
 lncr:
   internalUrl: "${LNCR_ALB_URL:http://localhost:8080}"
   externalUrl: "${LNCR_EXTERNAL_URL}"
   integration:
-    customersUrl: "${lncr.internalUrl}/customers"
     customerOrdersUrl: "${lncr.internalUrl}/customerOrders"
-    foodItemsUrl: "${lncr.internalUrl}/foodItems"
-    kitchenOrdersUrl: "${lncr.internalUrl}/kitchenOrders"
     paymentsUrl: "${lncr.internalUrl}/payments"
     notificationUrl: "${lncr.internalUrl}/notifications"
-
   mercadopago:
     locationPrefix: "${lncr.externalUrl}/payments/mercadoPago"
     oauthUrl: "${MERCADOPAGO_OAUTH_URL}"
@@ -38,13 +42,5 @@ lncr:
     expirationTime: "${MERCADOPAGO_EXPIRATION_TIME}" # 1 hora
     webhookSecret: "${MERCADOPAGO_WEBHOOK_SECRET}"
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics
-  endpoint:
-    health:
-      show-details: always
 
 
