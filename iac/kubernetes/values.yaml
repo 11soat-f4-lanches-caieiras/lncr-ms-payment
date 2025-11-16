@@ -31,11 +31,14 @@ ingress:
   enabled: true
   className: alb
   annotations:
-    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/load-balancer-name: ${ALB_NAME}
+    alb.ingress.kubernetes.io/group.name: ${ALB_NAME}
     alb.ingress.kubernetes.io/target-type: ip
-    alb.ingress.kubernetes.io/subnets: "subnet-0cfbff4d1c71d4495,subnet-0c0258d29df8ebaf2"
+    alb.ingress.kubernetes.io/subnets: ${ALB_SUBNETS}
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
-    alb.ingress.kubernetes.io/security-groups: { sg-072222a6f137b812d }
+    alb.ingress.kubernetes.io/security-groups: ${ALB_SECURITY_GROUP}
     alb.ingress.kubernetes.io/healthcheck-path: /actuator/health
   hosts:
   - host: ${INGRESS_HOST}

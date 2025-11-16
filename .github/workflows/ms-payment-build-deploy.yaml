@@ -20,7 +20,7 @@ on:
         type: string
 
 env:
-  #variáveis
+  #variáveis pipeline
   AWS_CODE_BUILD: ${{ vars.AWS_CODE_BUILD }}
   AWS_DEFAULT_REGION: ${{ vars.AWS_DEFAULT_REGION }}
   AWS_ECR_REGISTRY: ${{ vars.AWS_ECR_REGISTRY }}
@@ -29,21 +29,27 @@ env:
   DOCKERFILE_TEMPLATE_URL: ${{ vars.DOCKERFILE_TEMPLATE_URL }}
   ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
   EKS_CLUSTER: ${{ vars.EKS_CLUSTER }}
-  INGRESS_HOST: ${{ vars.INGRESS_HOST }}
   JACOCO_REPORT_PATH: "${{ vars.MS_DOMAIN }}/target/site/jacoco/jacoco.xml"
-  LNCR_INTERNAL_URL: ${{ vars.LNCR_INTERNAL_URL }}
-  LNCR_EXTERNAL_URL: ${{ vars.LNCR_EXTERNAL_URL }}
   MAVEN_POM_PATH: "${{ vars.MS_DOMAIN }}/pom.xml"
   MAVEN_SETTINGS_PATH: "${{ vars.MS_DOMAIN }}/maven_settings.xml"
   MAVEN_TEMPLATE_URL: ${{ vars.MAVEN_TEMPLATE_URL }}
   MS_DOMAIN: ${{ vars.MS_DOMAIN }}
-  MS_NAME: ${{ vars.MS_NAME }}
+
+  #variáveis aplicação:
+  LNCR_INTERNAL_URL: ${{ vars.LNCR_INTERNAL_URL }}
+  LNCR_EXTERNAL_URL: ${{ vars.LNCR_EXTERNAL_URL }}
   MERCADOPAGO_OAUTH_URL: ${{ vars.MERCADOPAGO_OAUTH_URL }}
   MERCADOPAGO_ORDERS_URL: ${{ vars.MERCADOPAGO_ORDERS_URL }}
   MERCADOPAGO_EXPIRATION_TIME: ${{ vars.MERCADOPAGO_EXPIRATION_TIME }}
 
+  #variáveis kubernetes
+  ALB_NAME: ${{ vars.ALB_NAME }}
+  ALB_SUBNETS: ${{ vars.ALB_SUBNETS }}
+  ALB_SECURITY_GROUP: ${{ vars.ALB_SECURITY_GROUP }}
+  INGRESS_HOST: ${{ vars.INGRESS_HOST }}
+  MS_NAME: ${{ vars.MS_NAME }}
 
-  # secrets
+  # secrets pipeline
   LNCR_MAVEN_ACTOR: ${{ secrets.LNCR_MAVEN_ACTOR }}
   LNCR_MAVEN_PAT: ${{ secrets.LNCR_MAVEN_PAT }}
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
@@ -282,6 +288,10 @@ jobs:
             --set app.mercadoPago.oauthUrl="${{ env.MERCADOPAGO_OAUTH_URL }}" \
             --set app.mercadoPago.ordersUrl="${{ env.MERCADOPAGO_ORDERS_URL }}" \
             --set app.mercadoPago.expirationTime="${{ env.MERCADOPAGO_EXPIRATION_TIME }}" \
+            --set ingress.annotations.alb\.ingress\.kubernetes\.io/load-balancer-name=${{ env.ALB_NAME }} \
+            --set ingress.annotations.alb\.ingress\.kubernetes\.io/group\.name=${ env.ALB_NAME } \
+            --set ingress.annotations.alb\.ingress\.kubernetes\.io/subnets=${{ env.ALB_SUBNETS }} \
+            --set ingress.annotations.alb\.ingress\.kubernetes\.io/security-groups=${{ env.ALB_SECURITY_GROUP }} \
             --set ingress.enabled=${INGRESS_ENABLED} \
             --set ingress.hosts[0].host="${{ env.INGRESS_HOST }}" \
             --set secretProviderClass.parameters.objects.objectName=${AWS_SECRET_MANAGER_ARN} \
