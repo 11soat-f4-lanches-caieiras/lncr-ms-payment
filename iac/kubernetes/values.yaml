@@ -1,0 +1,89 @@
+#valores padrões para o Helm Chart
+
+#ServiceAccount
+serviceAccount:
+  name: secrets-sa
+
+#Aplicação
+app:
+  name: payment
+  replicas: 1
+  image:
+    repository: ${AWS_ECR_REPOSITORY}
+    tag: latest
+    pullPolicy: IfNotPresent
+  port: 8080
+  containerName: customer
+  internalUrl: ${LNCR_INTERNAL_URL}
+  externalUrl: ${LNCR_EXTERNAL_URL}
+  mercadoPago:
+    oauthUrl: ${MERCADOPAGO_OAUTH_URL}
+    ordersUrl: ${MERCADOPAGO_ORDERS_URL}
+    expirationTime: ${MERCADOPAGO_EXPIRATION_TIME}
+
+#Service
+service:
+  port: 80
+  targetPort: 8080
+
+#Ingress
+ingress:
+  enabled: true
+  className: alb
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/subnets: "subnet-0cfbff4d1c71d4495,subnet-0c0258d29df8ebaf2"
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    alb.ingress.kubernetes.io/security-groups: { sg-072222a6f137b812d }
+    alb.ingress.kubernetes.io/healthcheck-path: /actuator/health
+  hosts:
+  - host: ${INGRESS_HOST}
+    paths:
+    - path: /
+      pathType: Prefix
+  tls: []
+
+
+#Deployment
+resources:
+  pods:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+
+#HPA
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 8
+  targetCPUUtilizationPercentage: 60
+  targetMemoryUtilizationPercentage: 70
+
+#SecretProviderClass
+secretProviderClass:
+  name: "lncr-ms-payment-prd-secrets"
+  namespace: prodution
+  provider: aws
+  parameters:
+    region: "us-east-1"
+    objects:
+      - objectName: ${ AWS_SECRET_MANAGER_ARN }
+        objectType: secretsmanager
+  keys:
+    - POSTGRES_URL
+    - POSTGRES_USER
+    - POSTGRES_PASSWORD
+    - MERCADOPAGO_CLIENT_ID
+    - MERCADOPAGO_SECRET_ID
+    - MERCADOPAGO_POS_ID
+    - MERCADOPAGO_WEBHOOK_SECRET
+  secretObjects:
+    - secretName: payment-secret
+      type: Opaque
+  twoSecrets:
+    enabled: false
+deploySecretName: payment-secret

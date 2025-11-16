@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app.name }}-deployment
+  labels:
+    app: {{ .Values.app.name }}
+spec:
+  replicas: {{ .Values.app.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.app.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app.name }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      tolerations:
+        - key: "CriticalAddonsOnly"
+          operator: "Exists"
+          effect: "NoSchedule"
+      containers:
+        - name: {{ .Values.app.containerName }}
+          image: "{{ .Values.app.image.repository }}{{- if .Values.app.image.tag }}:{{ .Values.app.image.tag }}{{- end }}"
+          imagePullPolicy: {{ .Values.app.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.app.port }}
+          env:
+            #configMap
+            - name: LNCR_INTERNAL_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.app.name }}-config
+                  key: LNCR_INTERNAL_URL
+            - name: LNCR_EXTERNAL_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.app.name }}-config
+                  key: LNCR_EXTERNAL_URL
+            - name: MERCADOPAGO_OAUTH_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: { { .Values.app.name } }-config
+                  key: MERCADOPAGO_OAUTH_URL
+            - name: MERCADOPAGO_ORDERS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: { { .Values.app.name } }-config
+                  key: MERCADOPAGO_ORDERS_URL
+            - name: MERCADOPAGO_EXPIRATION_TIME
+              valueFrom:
+                configMapKeyRef:
+                  name: { { .Values.app.name } }-config
+                  key: MERCADOPAGO_EXPIRATION_TIME
+            #secrets from SecretProviderClass
+            {{- range .Values.secretProviderClass.keys }}
+            - name: {{ . }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ index $.Values.secretProviderClass.secretObjects 0 "secretName" }}
+                  key: {{ . }}
+            {{- end }}
+          volumeMounts:
+            - name: secrets-store
+              mountPath: /mnt/secrets-store
+              readOnly: true
+          resources:
+            requests:
+              memory: {{ .Values.resources.pods.requests.memory }}
+              cpu: {{ .Values.resources.pods.requests.cpu }}
+            limits:
+              memory: {{ .Values.resources.pods.limits.memory }}
+              cpu: {{ .Values.resources.pods.limits.cpu }}
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+      volumes:
+        - name: secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: {{ .Values.secretProviderClass.name }}
