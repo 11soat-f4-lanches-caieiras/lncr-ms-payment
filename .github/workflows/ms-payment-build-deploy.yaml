@@ -1,4 +1,11 @@
 name: Construir e Upload da Aplicação lncr-ms-payment
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  id-token: write
+
 on:
   repository_dispatch:
     types: [infra-base-completed]
@@ -62,7 +69,7 @@ env:
 jobs:
   build-and-upload:
     name: Validação Construção e Upload da Imagem Docker
-    runs-on: ${{ env.AWS_CODE_BUILD }}-${{ github.run_id }}-${{ github.run_attempt }}
+    runs-on: ${{ vars.AWS_CODE_BUILD }}-${{ github.run_id }}-${{ github.run_attempt }}
     #Disparado via repository_dispatch do repositório lncr-iac
     if: ${{ (github.event_name == 'workflow_dispatch' || github.event_name == 'repository_dispatch') && !inputs.only-helm-deploy }}
     environment:
@@ -250,12 +257,16 @@ jobs:
     name: Deploy com Helm
     needs: [approve-helm-only, approve-after-build]
     if: ${{ always() && (needs.approve-after-build.result == 'success' || needs.approve-helm-only.result == 'success') }}
-    runs-on: ${{ env.AWS_CODE_BUILD }}-${{ github.run_id }}-${{ github.run_attempt }}
+    runs-on: ${{ vars.AWS_CODE_BUILD }}-${{ github.run_id }}-${{ github.run_attempt }}
     environment:
       name: ${{ github.ref_name == 'master' && 'prd' || 'dev' }}
     steps:
       - name: Fazer checkout do código
         uses: actions/checkout@v4
+
+      - name: Login no Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Instalar Helm
         run: |
@@ -265,11 +276,60 @@ jobs:
         run: |
           aws eks update-kubeconfig --region ${{ vars.AWS_DEFAULT_REGION }} --name ${{ vars.EKS_CLUSTER }}
 
+      - name: Validar Chart (lint + template)
+        run: |
+          cd iac/kubernetes
+          helm lint .
+          helm template dryrun . \
+            --set ingress.enabled=true \
+            --set ingress.hosts[0].host="${{ env.INGRESS_HOST }}" | awk '/kind: Ingress/{flag=1} flag{print} /kind: SecretProviderClass/{flag=0}'
+          echo "Renderizacao ingress OK se annotations listadas como chave: \"valor\""
+
       - name: Deploy com Helm
         run: |
+          ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}
           COMMIT_HASH="$(git rev-parse --short HEAD)"
           IMAGE_TAG="${COMMIT_HASH}"
-          AWS_SECRET_MANAGER_ARN=$(aws secretsmanager list-secrets --region ${{ vars.AWS_DEFAULT_REGION }} --query "SecretList[?contains(Name, '${{ env.MS_NAME }}-prd-secret')].ARN | [0]" --output text)
+    
+          # Se for deploy apenas do Helm, usar a tag 'latest'
+          if [ "${{ inputs.only-helm-deploy }}" = "true" ]; then
+              IMAGE_TAG="latest"
+          fi
+          
+          echo "Buscando configurações da AWS..."
+          
+          # Buscar Secret Manager ARN
+          AWS_SECRET_MANAGER_ARN="$(aws secretsmanager list-secrets --region ${{ vars.AWS_DEFAULT_REGION }} --query "SecretList[?contains(Name, '${{ env.MS_NAME }}-prd-secret')].ARN | [0]" --output text)"
+          
+          # Buscar subnets diretamente do cluster EKS
+          echo "Buscando subnets do cluster EKS..."
+          EKS_SUBNETS=$(aws eks describe-cluster \
+            --name ${{ vars.EKS_CLUSTER }} \
+            --region ${{ vars.AWS_DEFAULT_REGION }} \
+            --query 'cluster.resourcesVpcConfig.subnetIds' \
+            --output text | tr '\t' ',')
+          
+          echo "Subnets do cluster EKS: $EKS_SUBNETS"
+          
+          # Buscar Security Group do cluster EKS
+          CLUSTER_SG=$(aws eks describe-cluster \
+            --name ${{ vars.EKS_CLUSTER }} \
+            --region ${{ vars.AWS_DEFAULT_REGION }} \
+            --query 'cluster.resourcesVpcConfig.clusterSecurityGroupId' \
+            --output text)
+          
+          echo "Security Group do cluster: $CLUSTER_SG"
+          
+          # Validar se encontrou as configurações necessárias
+          if [ -z "$EKS_SUBNETS" ]; then
+            echo "ERRO: Não foi possível encontrar subnets do cluster EKS"
+            exit 1
+          fi
+          
+          if [ -z "$CLUSTER_SG" ]; then
+            echo "ERRO: Não foi possível encontrar o Security Group do cluster"
+            exit 1
+          fi
           
           cd iac/kubernetes
 
@@ -279,20 +339,26 @@ jobs:
             INGRESS_ENABLED="false"
           fi
 
+          ESCAPED_SUBNETS=$(printf "%s" "$EKS_SUBNETS" | sed 's/,/\\,/g')
+
+          echo "Executando Helm deploy..."
           helm upgrade --install ${{ env.MS_NAME }} . \
             --namespace production \
             --create-namespace \
-            --set app.image.repository=${{ env.AWS_ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }} \
+            --set app.image.repository=${ECR_REGISTRY}/${{ env.ECR_REPOSITORY }} \
             --set app.image.tag=${IMAGE_TAG} \
             --set app.internalUrl="${{ env.LNCR_INTERNAL_URL }}" \
+            --set app.externalUrl="${{ env.LNCR_EXTERNAL_URL }}" \
             --set app.mercadoPago.oauthUrl="${{ env.MERCADOPAGO_OAUTH_URL }}" \
             --set app.mercadoPago.ordersUrl="${{ env.MERCADOPAGO_ORDERS_URL }}" \
             --set app.mercadoPago.expirationTime="${{ env.MERCADOPAGO_EXPIRATION_TIME }}" \
-            --set ingress.annotations.alb\.ingress\.kubernetes\.io/load-balancer-name=${{ env.ALB_NAME }} \
-            --set ingress.annotations.alb\.ingress\.kubernetes\.io/group\.name=${ env.ALB_NAME } \
-            --set ingress.annotations.alb\.ingress\.kubernetes\.io/subnets=${{ env.ALB_SUBNETS }} \
-            --set ingress.annotations.alb\.ingress\.kubernetes\.io/security-groups=${{ env.ALB_SECURITY_GROUP }} \
             --set ingress.enabled=${INGRESS_ENABLED} \
             --set ingress.hosts[0].host="${{ env.INGRESS_HOST }}" \
-            --set secretProviderClass.parameters.objects.objectName=${AWS_SECRET_MANAGER_ARN} \
+            --set-string ingress.annotations."alb.ingress.kubernetes.io/group.name"="${{ env.ALB_NAME }}" \
+            --set-string ingress.annotations."alb.ingress.kubernetes.io/subnets"="${ESCAPED_SUBNETS}" \
+            --set-string ingress.annotations."alb.ingress.kubernetes.io/security-groups"="${CLUSTER_SG}" \
+            --set secretProviderClass.parameters.objects[0].objectName=${AWS_SECRET_MANAGER_ARN} \
+            --set secretProviderClass.parameters.objects[0].objectType=secretsmanager \
             --force
+          
+          echo "Deploy concluído com sucesso!"

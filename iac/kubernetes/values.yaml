@@ -33,17 +33,19 @@ ingress:
   annotations:
     alb.ingress.kubernetes.io/scheme: internal
     alb.ingress.kubernetes.io/backend-protocol: HTTP
-    alb.ingress.kubernetes.io/load-balancer-name: ${ALB_NAME}
-    alb.ingress.kubernetes.io/group.name: ${ALB_NAME}
     alb.ingress.kubernetes.io/target-type: ip
-    alb.ingress.kubernetes.io/subnets: ${ALB_SUBNETS}
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
-    alb.ingress.kubernetes.io/security-groups: ${ALB_SECURITY_GROUP}
     alb.ingress.kubernetes.io/healthcheck-path: /actuator/health
+    alb.ingress.kubernetes.io/load-balancer-name: "lncr-prd-int-alb"
+    # As anotações abaixo serão definidas via --set-string na pipeline:
+    # - alb.ingress.kubernetes.io/load-balancer-name
+    # - alb.ingress.kubernetes.io/group.name
+    # - alb.ingress.kubernetes.io/subnets
+    # - alb.ingress.kubernetes.io/security-groups
   hosts:
-  - host: ${INGRESS_HOST}
+  - host: ""
     paths:
-    - path: /
+    - path: /payments
       pathType: Prefix
   tls: []
 
@@ -69,7 +71,7 @@ hpa:
 #SecretProviderClass
 secretProviderClass:
   name: "lncr-ms-payment-prd-secrets"
-  namespace: prodution
+  namespace: production
   provider: aws
   parameters:
     region: "us-east-1"
