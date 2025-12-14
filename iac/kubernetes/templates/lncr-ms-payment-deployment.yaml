@@ -40,17 +40,17 @@ spec:
             - name: MERCADOPAGO_OAUTH_URL
               valueFrom:
                 configMapKeyRef:
-                  name: { { .Values.app.name } }-config
+                  name: {{ .Values.app.name }}-config
                   key: MERCADOPAGO_OAUTH_URL
             - name: MERCADOPAGO_ORDERS_URL
               valueFrom:
                 configMapKeyRef:
-                  name: { { .Values.app.name } }-config
+                  name: {{ .Values.app.name }}-config
                   key: MERCADOPAGO_ORDERS_URL
             - name: MERCADOPAGO_EXPIRATION_TIME
               valueFrom:
                 configMapKeyRef:
-                  name: { { .Values.app.name } }-config
+                  name: {{ .Values.app.name }}-config
                   key: MERCADOPAGO_EXPIRATION_TIME
             #secrets from SecretProviderClass
             {{- range .Values.secretProviderClass.keys }}

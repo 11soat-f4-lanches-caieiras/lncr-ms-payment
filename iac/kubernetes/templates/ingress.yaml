@@ -1,25 +1,33 @@
-{{- /* Ingress minimalista usando apenas o primeiro host definido */ -}}
-{{- if and .Values.ingress.enabled (gt (len .Values.ingress.hosts) 0) -}}
-{{- $hostEntry := index .Values.ingress.hosts 0 -}}
-{{- if and $hostEntry.host (not (hasPrefix "${" $hostEntry.host)) (ne $hostEntry.host "") -}}
+{{- if .Values.ingress.enabled -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ .Values.app.name }}-ingress
   labels:
     app: {{ .Values.app.name }}
+  {{- if .Values.ingress.annotations }}
+  annotations:
+    {{- range $k, $v := .Values.ingress.annotations }}
+    {{ $k }}: {{ $v | quote }}
+    {{- end }}
+  {{- end }}
 spec:
   ingressClassName: {{ .Values.ingress.className | default "alb" }}
   rules:
-  - host: {{ $hostEntry.host | quote }}
+  {{- range .Values.ingress.hosts }}
+  - {{- if .host }}
+    host: {{ .host | quote }}
+    {{- end }}
     http:
       paths:
-      - path: /
-        pathType: Prefix
+      {{- range .paths }}
+      - path: {{ .path }}
+        pathType: {{ .pathType }}
         backend:
           service:
-            name: {{ .Values.app.name }}-service
+            name: {{ $.Values.app.name }}-service
             port:
-              number: {{ .Values.service.port }}
-{{- end -}}
+              number: {{ $.Values.service.port }}
+      {{- end }}
+  {{- end }}
 {{- end -}}

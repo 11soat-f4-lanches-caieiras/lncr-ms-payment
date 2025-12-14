@@ -8,7 +8,7 @@ metadata:
 data:
   LNCR_INTERNAL_URL: {{ .Values.app.internalUrl | quote }}
   LNCR_EXTERNAL_URL: {{ .Values.app.externalUrl | quote }}
-  MERCADOPAGO_OAUTH_URL: {{ .Values.app.mercadopago.oauthUrl | quote }}
-  MERCADOPAGO_ORDERS_URL: {{ .Values.app.mercadopago.ordersUrl | quote }}
-  MERCADOPAGO_EXPIRATION_TIME: {{ .Values.app.mercadopago.expirationTime | quote }}
+  MERCADOPAGO_OAUTH_URL: {{ .Values.app.mercadoPago.oauthUrl | quote }}
+  MERCADOPAGO_ORDERS_URL: {{ .Values.app.mercadoPago.ordersUrl | quote }}
+  MERCADOPAGO_EXPIRATION_TIME: {{ .Values.app.mercadoPago.expirationTime | quote }}
 
