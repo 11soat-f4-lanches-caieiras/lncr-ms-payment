@@ -359,7 +359,7 @@ jobs:
           
           cd iac/kubernetes
 
-          # Desabilitar ingress se INGRESS_HOST estiver vazio
+          # Configurar ingress
           INGRESS_ENABLED="true"
           if [ -z "${{ env.INGRESS_HOST }}" ]; then
             INGRESS_ENABLED="false"
@@ -368,22 +368,31 @@ jobs:
           ESCAPED_SUBNETS=$(printf "%s" "$EKS_SUBNETS" | sed 's/,/\\,/g')
 
           echo "Executando Helm deploy..."
-          helm upgrade --install ${{ env.MS_NAME }} . \
-            --namespace production \
-            --create-namespace \
-            --set app.image.repository=${ECR_REGISTRY}/${{ env.ECR_REPOSITORY }} \
-            --set app.image.tag=${IMAGE_TAG} \
-            --set app.internalUrl="${{ env.LNCR_INTERNAL_URL }}" \
-            --set app.externalUrl="${{ env.LNCR_EXTERNAL_URL }}" \
-            --set app.mercadoPago.oauthUrl="${{ env.MERCADOPAGO_OAUTH_URL }}" \
-            --set app.mercadoPago.ordersUrl="${{ env.MERCADOPAGO_ORDERS_URL }}" \
-            --set app.mercadoPago.expirationTime="${{ env.MERCADOPAGO_EXPIRATION_TIME }}" \
-            --set ingress.enabled=${INGRESS_ENABLED} \
-            --set ingress.hosts[0].host="${{ env.INGRESS_HOST }}" \
-            --set-string ingress.annotations."alb.ingress.kubernetes.io/subnets"="${ESCAPED_SUBNETS}" \
-            --set-string ingress.annotations."alb.ingress.kubernetes.io/security-groups"="${CLUSTER_SG}" \
-            --set secretProviderClass.parameters.objects[0].objectName=${AWS_SECRET_MANAGER_ARN} \
-            --set secretProviderClass.parameters.objects[0].objectType=secretsmanager \
+          HELM_ARGS=(
+            --namespace production
+            --create-namespace
+            --set app.image.repository="${ECR_REGISTRY}/${{ env.ECR_REPOSITORY }}"
+            --set app.image.tag="${IMAGE_TAG}"
+            --set app.internalUrl="${{ env.LNCR_INTERNAL_URL }}"
+            --set app.externalUrl="${{ env.LNCR_EXTERNAL_URL }}"
+            --set app.mercadoPago.oauthUrl="${{ env.MERCADOPAGO_OAUTH_URL }}"
+            --set app.mercadoPago.ordersUrl="${{ env.MERCADOPAGO_ORDERS_URL }}"
+            --set app.mercadoPago.expirationTime="${{ env.MERCADOPAGO_EXPIRATION_TIME }}"
+            --set ingress.enabled="${INGRESS_ENABLED}"
+            --set-string ingress.annotations."alb.ingress.kubernetes.io/subnets"="${ESCAPED_SUBNETS}"
+            --set-string ingress.annotations."alb.ingress.kubernetes.io/security-groups"="${CLUSTER_SG}"
+            --set secretProviderClass.parameters.objects[0].objectName="${AWS_SECRET_MANAGER_ARN}"
+            --set secretProviderClass.parameters.objects[0].objectType=secretsmanager
             --force
+          )
+          
+          # Só sobrescreve o host se INGRESS_HOST estiver definido
+          if [ -n "${{ env.INGRESS_HOST }}" ]; then
+            HELM_ARGS+=(--set ingress.hosts[0].host="${{ env.INGRESS_HOST }}")
+            HELM_ARGS+=(--set ingress.hosts[0].paths[0].path="/payments")
+            HELM_ARGS+=(--set ingress.hosts[0].paths[0].pathType="Prefix")
+          fi
+          
+          helm upgrade --install ${{ env.MS_NAME }} . "${HELM_ARGS[@]}"
           
           echo "Deploy concluído com sucesso!"
