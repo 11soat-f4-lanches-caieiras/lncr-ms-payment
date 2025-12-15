@@ -50,9 +50,6 @@ env:
   MERCADOPAGO_EXPIRATION_TIME: ${{ vars.MERCADOPAGO_EXPIRATION_TIME }}
 
   #variáveis kubernetes
-  ALB_SUBNETS: ${{ vars.ALB_SUBNETS }}
-  ALB_SECURITY_GROUP: ${{ vars.ALB_SECURITY_GROUP }}
-  INGRESS_HOST: ${{ vars.INGRESS_HOST }}
   MS_NAME: ${{ vars.MS_NAME }}
   IAC_TEMPLATES_PATH: 'iac/kubernetes/templates'
   IAC_KUBERNETES_FILES: ${{ vars.IAC_KUBERNETES_FILES }}
@@ -359,12 +356,6 @@ jobs:
           
           cd iac/kubernetes
 
-          # Configurar ingress
-          INGRESS_ENABLED="true"
-          if [ -z "${{ env.INGRESS_HOST }}" ]; then
-            INGRESS_ENABLED="false"
-          fi
-
           ESCAPED_SUBNETS=$(printf "%s" "$EKS_SUBNETS" | sed 's/,/\\,/g')
 
           echo "Executando Helm deploy..."
@@ -378,21 +369,16 @@ jobs:
             --set app.mercadoPago.oauthUrl="${{ env.MERCADOPAGO_OAUTH_URL }}"
             --set app.mercadoPago.ordersUrl="${{ env.MERCADOPAGO_ORDERS_URL }}"
             --set app.mercadoPago.expirationTime="${{ env.MERCADOPAGO_EXPIRATION_TIME }}"
-            --set ingress.enabled="${INGRESS_ENABLED}"
+            --set ingress.enabled="true"
             --set-string ingress.annotations."alb.ingress.kubernetes.io/subnets"="${ESCAPED_SUBNETS}"
             --set-string ingress.annotations."alb.ingress.kubernetes.io/security-groups"="${CLUSTER_SG}"
             --set secretProviderClass.parameters.objects[0].objectName="${AWS_SECRET_MANAGER_ARN}"
             --set secretProviderClass.parameters.objects[0].objectType=secretsmanager
+            --set ingress.hosts[0].paths[0].path="/payments"
+            --set ingress.hosts[0].paths[0].pathType="Prefix"
             --force
           )
-          
-          # Só sobrescreve o host se INGRESS_HOST estiver definido
-          if [ -n "${{ env.INGRESS_HOST }}" ]; then
-            HELM_ARGS+=(--set ingress.hosts[0].host="${{ env.INGRESS_HOST }}")
-            HELM_ARGS+=(--set ingress.hosts[0].paths[0].path="/payments")
-            HELM_ARGS+=(--set ingress.hosts[0].paths[0].pathType="Prefix")
-          fi
-          
+
           helm upgrade --install ${{ env.MS_NAME }} . "${HELM_ARGS[@]}"
           
           echo "Deploy concluído com sucesso!"
