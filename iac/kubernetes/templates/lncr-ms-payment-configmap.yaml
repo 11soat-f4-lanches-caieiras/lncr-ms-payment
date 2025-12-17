@@ -11,4 +11,14 @@ data:
   MERCADOPAGO_OAUTH_URL: {{ .Values.app.mercadoPago.oauthUrl | quote }}
   MERCADOPAGO_ORDERS_URL: {{ .Values.app.mercadoPago.ordersUrl | quote }}
   MERCADOPAGO_EXPIRATION_TIME: {{ .Values.app.mercadoPago.expirationTime | quote }}
+  JAVA_TOOL_OPTIONS: >-
+    -XX:+UseContainerSupport
+    -XX:MaxRAMPercentage=75.0
+    -XX:InitialRAMPercentage=50.0
+    -XX:+UseG1GC
+    -XX:MaxGCPauseMillis=100
+    -XX:+UseStringDeduplication
+    -Xss256k
+    -XX:ReservedCodeCacheSize=64m
+    -Djava.security.egd=file:/dev/./urandom
 
