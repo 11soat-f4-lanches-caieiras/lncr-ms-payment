@@ -283,10 +283,32 @@ jobs:
           LNCR_MAVEN_PAT: ${{ env.LNCR_MAVEN_PAT }}
 
         run: |
-          file=echo $file | tr -d '\n' | tr -d '\r'
+          # Validar variáveis obrigatórias
+          if [ -z "$IAC_TEMPLATES_PATH" ]; then
+            echo "ERRO: Variável IAC_TEMPLATES_PATH não está definida ou está vazia."
+            exit 1
+          fi
+
+          if [ -z "$IAC_KUBERNETES_FILES" ]; then
+            echo "ERRO: Variável IAC_KUBERNETES_FILES não está definida ou está vazia."
+            exit 1
+          fi
+
+          if [ -z "$IAC_KUBERNETES_TEMPLATES_URL" ]; then
+            echo "ERRO: Variável IAC_KUBERNETES_TEMPLATES_URL não está definida ou está vazia."
+            exit 1
+          fi
+
+          # Criar diretório de templates se não existir
+          mkdir -p "$IAC_TEMPLATES_PATH"
+
           echo "Verificando e obtendo templates comuns de Kubernetes: $IAC_KUBERNETES_FILES"
+          
           # Processar cada arquivo da lista
           for file in $IAC_KUBERNETES_FILES; do
+            # Limpar caracteres especiais
+            file=$(echo "$file" | tr -d '\n' | tr -d '\r')
+            
             # Verificar se o arquivo já existe localmente em templates/
             if [ -f "$IAC_TEMPLATES_PATH/$file" ]; then
               echo "Arquivo $file já existe localmente em iac/kubernetes/templates/, pulando download."
@@ -294,9 +316,17 @@ jobs:
               echo "Arquivo $file não encontrado localmente. Baixando do repositório remoto..."
               URL_TEMPLATE_FILE=${IAC_KUBERNETES_TEMPLATES_URL}/$file
               echo "Baixando $file de $URL_TEMPLATE_FILE"
-              curl -s -H "Authorization: token ${LNCR_MAVEN_PAT}" -o "$IAC_TEMPLATES_PATH/$file" "$URL_TEMPLATE_FILE"
+              
+              # Baixar arquivo e validar sucesso
+              if curl -s -f -H "Authorization: token ${LNCR_MAVEN_PAT}" -o "$IAC_TEMPLATES_PATH/$file" "$URL_TEMPLATE_FILE"; then
+                echo "✓ Arquivo $file baixado com sucesso."
+              else
+                echo "ERRO: Falha ao baixar o arquivo $file de $URL_TEMPLATE_FILE"
+                exit 1
+              fi
             fi
           done
+          
           echo "Processamento de templates concluído."
 
       - name: Validar Chart (lint + template)
