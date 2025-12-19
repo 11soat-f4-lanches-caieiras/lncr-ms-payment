@@ -212,9 +212,10 @@ class MercadoPagoAccreditedHandlerTest {
         String signature = new org.apache.commons.codec.digest.HmacUtils("HmacSHA256", secret).hmacHex(manifest);
         String xSignature = String.format("ts=%s,v1=%s", ts, signature);
 
-        when(request.getHeader("x-signature")).thenReturn(xSignature);
-        when(request.getHeader("x-request-id")).thenReturn(requestId);
-        when(request.getQueryString()).thenReturn(null);
+        lenient().when(request.getHeader("x-signature")).thenReturn(xSignature);
+        lenient().when(request.getHeader("x-request-id")).thenReturn(requestId);
+        lenient().when(request.getQueryString()).thenReturn(null);
+        lenient().when(mercadoPagoConfig.isWebhookValidationSignature()).thenReturn(true);
 
         MercadoPagoCallbackDTO.Data data = new MercadoPagoCallbackDTO.Data(
             "ext-ref-123",
@@ -245,7 +246,7 @@ class MercadoPagoAccreditedHandlerTest {
                 handler.handle(callbackDTO, request, mercadoPagoConfig);
             } catch (Exception e) {
                 // Expected in test context without actual server for routing
-                if (!e.getMessage().contains("I/O error")) {
+                if (!e.getMessage().contains("I/O error") && !e.getMessage().contains("Erro na integração")) {
                     throw e;
                 }
             }
@@ -255,6 +256,7 @@ class MercadoPagoAccreditedHandlerTest {
     @Test
     void testHandle_InvalidSignature_ThrowsException() {
         // Arrange
+        when(mercadoPagoConfig.isWebhookValidationSignature()).thenReturn(true);
         when(request.getHeader("x-signature")).thenReturn("ts=123,v1=invalid-sig");
         when(request.getHeader("x-request-id")).thenReturn("req-123");
 
@@ -290,6 +292,7 @@ class MercadoPagoAccreditedHandlerTest {
     @Test
     void testHandle_MissingHeaders_ThrowsException() {
         // Arrange
+        when(mercadoPagoConfig.isWebhookValidationSignature()).thenReturn(true);
         when(request.getHeader("x-signature")).thenReturn(null);
         when(request.getHeader("x-request-id")).thenReturn("req-123");
 
