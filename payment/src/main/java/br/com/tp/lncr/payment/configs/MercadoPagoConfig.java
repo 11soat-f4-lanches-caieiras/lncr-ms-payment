@@ -26,6 +26,7 @@ public class MercadoPagoConfig {
     private String posId;
     private String expirationTime;
     private String webhookSecret;
+    private boolean webhookValidationSignature;
 
     public String getLocationPrefix() {
         return locationPrefix;
@@ -89,6 +90,14 @@ public class MercadoPagoConfig {
 
     public void setWebhookSecret(String webhookSecret) {
         this.webhookSecret = webhookSecret;
+    }
+
+    public boolean isWebhookValidationSignature() {
+        return webhookValidationSignature;
+    }
+
+    public void setWebhookValidationSignature(boolean webhookValidationSignature) {
+        this.webhookValidationSignature = webhookValidationSignature;
     }
 
     @Bean

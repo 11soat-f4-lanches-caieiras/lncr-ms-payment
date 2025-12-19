@@ -41,6 +41,4 @@ lncr:
     posId: "${MERCADOPAGO_POS_ID}" #.env
     expirationTime: "${MERCADOPAGO_EXPIRATION_TIME}" # 1 hora
     webhookSecret: "${MERCADOPAGO_WEBHOOK_SECRET}"
-
-
-
+    webhookValidationSignature: "${MERCADOPAGO_WEBHOOK_VALIDATION_SIGNATURE:true}" #Para validação local quando não se tem o valor da assinatura
