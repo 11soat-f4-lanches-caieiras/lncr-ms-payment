@@ -55,7 +55,7 @@ spec:
             - name: MERCADOPAGO_WEBHOOK_VALIDATION_SIGNATURE
               valueFrom:
                 configMapKeyRef:
-                  name: { { .Values.app.name } }-config
+                  name: {{ .Values.app.name }}-config
                   key: MERCADOPAGO_WEBHOOK_VALIDATION_SIGNATURE
             #secrets from SecretProviderClass
             {{- range .Values.secretProviderClass.keys }}
