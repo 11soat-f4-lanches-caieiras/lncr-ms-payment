@@ -4,6 +4,8 @@ import br.com.tp.lncr.commons.model.ResponseModel;
 import br.com.tp.lncr.core.utils.LoggerUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.codec.digest.HmacUtils;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -18,7 +20,9 @@ public class MercadoPagoWebhookUtils {
     }
 
     public static void routeCallback(MercadoPagoCallbackDTO callbackDTO, String url) {
-            RestTemplate restTemplate = new RestTemplate(new HttpComponentsClientHttpRequestFactory());
+            CloseableHttpClient httpClient = HttpClients.createDefault();
+            HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory(httpClient);
+            RestTemplate restTemplate = new RestTemplate(requestFactory);
             HttpEntity<MercadoPagoCallbackDTO> requestEntity = createHttpEntity(callbackDTO);
             restTemplate.exchange(url, HttpMethod.PATCH, requestEntity, new ParameterizedTypeReference<ResponseModel<String>>() {});
     }
