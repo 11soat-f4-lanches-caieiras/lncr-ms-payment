@@ -20,6 +20,7 @@ app:
     oauthUrl: ${MERCADOPAGO_OAUTH_URL}
     ordersUrl: ${MERCADOPAGO_ORDERS_URL}
     expirationTime: ${MERCADOPAGO_EXPIRATION_TIME}
+    webhookValidationSignature: ${MERCADOPAGO_WEBHOOK_VALIDATION_SIGNATURE}
 
 #Service
 service:
