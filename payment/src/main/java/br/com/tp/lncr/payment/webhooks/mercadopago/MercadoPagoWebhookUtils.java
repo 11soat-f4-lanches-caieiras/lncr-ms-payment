@@ -1,14 +1,17 @@
 package br.com.tp.lncr.payment.webhooks.mercadopago;
 
 import br.com.tp.lncr.commons.utils.IntegrationUtil;
-import br.com.tp.lncr.core.utils.LoggerUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.codec.digest.HmacUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 
 public class MercadoPagoWebhookUtils {
+
+    private static final Logger log = LoggerFactory.getLogger(MercadoPagoWebhookUtils.class);
 
     private MercadoPagoWebhookUtils() {
         throw new IllegalStateException("Utility class");
@@ -29,7 +32,7 @@ public class MercadoPagoWebhookUtils {
     }
 
     public static void validateCallbackSignature(MercadoPagoCallbackDTO callbackDTO, HttpServletRequest request, String secret) {
-        LoggerUtil.info("Iniciando validação da assinatura do webhook do MercadoPago");
+        log.info("Iniciando validação da assinatura do webhook do MercadoPago");
         String xSignature = request.getHeader("x-signature");
         String xRequestId = request.getHeader("x-request-id");
         // Extrai o ID dos dados do callback e converte para minúsculas regra do Mercado Pago
@@ -37,10 +40,10 @@ public class MercadoPagoWebhookUtils {
         String dataId = callbackDTO.data().id().toLowerCase();
 
         if (xSignature == null || xSignature.isEmpty() || dataId.isEmpty() || xRequestId == null || xRequestId.isEmpty()) {
-            LoggerUtil.error("Assinatura ou ID de dados ausentes no cabeçalho da solicitação");
-            LoggerUtil.info("Signature: " + xSignature);
-            LoggerUtil.info("RequestID: " + xRequestId);
-            LoggerUtil.info("DataID: " + dataId);
+            log.error("Assinatura ou ID de dados ausentes no cabeçalho da solicitação");
+            log.info("Signature: {}", xSignature);
+            log.info("RequestID: {}", xRequestId);
+            log.info("DataID: {}", dataId);
             throw new IllegalArgumentException("Parâmetros de validação ausentes");
 
         }
@@ -51,10 +54,10 @@ public class MercadoPagoWebhookUtils {
         String sha = createHMAC256Signature(secret, manifest);
 
         if (!isValidSignature(v1, sha)) {
-            LoggerUtil.error("Assinatura inválida detectada no webhook do MercadoPago");
+            log.error("Assinatura inválida detectada no webhook do MercadoPago");
             throw new IllegalArgumentException("Assinatura inválida");
         }
-        LoggerUtil.info("Assinatura do webhook do MercadoPago validada com sucesso");
+        log.info("Assinatura do webhook do MercadoPago validada com sucesso");
     }
 
     private static String setManifest(String dataId, String requestId, String ts) {
