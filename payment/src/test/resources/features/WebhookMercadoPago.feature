@@ -11,7 +11,7 @@ Funcionalidade: Webhook do Mercado Pago
     E a notificação contém data_id "mp-456"
     E o tipo da notificação é "payment"
     Quando o webhook processar a notificação
-    Então o sistema deve retornar status HTTP 202
+    Então o sistema deve retornar status HTTP 200
     E deve encaminhar a notificação para o serviço de pagamentos
 
   Cenário: Processar callback de forma assíncrona

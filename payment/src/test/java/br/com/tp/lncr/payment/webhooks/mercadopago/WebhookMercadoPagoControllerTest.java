@@ -68,7 +68,7 @@ class WebhookMercadoPagoControllerTest {
 
         // Assert
         assertNotNull(response);
-        assertEquals(HttpStatus.ACCEPTED, response.getStatusCode());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
         verify(handlerRouter, timeout(1000).times(1)).route(callbackDTO, httpServletRequest, mercadoPagoConfig);
     }
 
@@ -105,7 +105,7 @@ class WebhookMercadoPagoControllerTest {
 
         // Assert
         assertNotNull(response);
-        assertEquals(HttpStatus.ACCEPTED, response.getStatusCode());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Test
@@ -143,7 +143,7 @@ class WebhookMercadoPagoControllerTest {
 
         // Assert
         assertTrue((endTime - startTime) < 100, "Response should be returned immediately (< 100ms)");
-        assertEquals(HttpStatus.ACCEPTED, response.getStatusCode());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
 
         // Verify async processing happens
         verify(handlerRouter, timeout(2000).atLeastOnce()).route(any(), any(), any());
@@ -182,7 +182,7 @@ class WebhookMercadoPagoControllerTest {
 
         // Assert
         assertNotNull(response);
-        assertEquals(HttpStatus.ACCEPTED, response.getStatusCode());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
         verify(handlerRouter, timeout(1000).times(1)).route(any(), any(), any());
     }
 }

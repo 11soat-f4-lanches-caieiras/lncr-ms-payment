@@ -104,7 +104,7 @@ public class WebhookMercadoPagoSteps {
 
     @Então("deve encaminhar a notificação para o serviço de pagamentos")
     public void deveEncaminharANotificacaoParaOServicoDePagamentos() {
-        assertEquals(HttpStatus.ACCEPTED, response.getStatusCode());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
         verify(handlerRouter, timeout(1000).times(1)).route(any(), any(), any());
     }
 
@@ -153,12 +153,12 @@ public class WebhookMercadoPagoSteps {
     @Então("deve retornar a resposta imediatamente")
     public void deveRetornarARespostaImediatamente() {
         assertNotNull(response);
-        assertEquals(HttpStatus.ACCEPTED, response.getStatusCode());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Então("processar a notificação de forma assíncrona")
     public void processarANotificacaoDeFormaAssincrona() {
-        assertEquals(HttpStatus.ACCEPTED, response.getStatusCode());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
         verify(handlerRouter, timeout(2000).atLeastOnce()).route(any(), any(), any());
     }
 }
