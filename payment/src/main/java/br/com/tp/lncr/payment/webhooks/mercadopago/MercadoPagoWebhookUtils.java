@@ -13,6 +13,8 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.logging.Logger;
+
 public class MercadoPagoWebhookUtils {
 
     private MercadoPagoWebhookUtils() {
@@ -38,6 +40,7 @@ public class MercadoPagoWebhookUtils {
     }
 
     public static void validateCallbackSignature(MercadoPagoCallbackDTO callbackDTO, HttpServletRequest request, String secret) {
+        LoggerUtil.info("Iniciando validação da assinatura do webhook do MercadoPago");
         String xSignature = request.getHeader("x-signature");
         String xRequestId = request.getHeader("x-request-id");
         // Extrai o ID dos dados do callback e converte para minúsculas regra do Mercado Pago
