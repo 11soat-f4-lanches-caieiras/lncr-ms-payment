@@ -45,6 +45,8 @@ ingress:
   - paths:
     - path: /payments
       pathType: Prefix
+    - path: /webhooks
+      pathType: Prefix
   tls: []
 
 
