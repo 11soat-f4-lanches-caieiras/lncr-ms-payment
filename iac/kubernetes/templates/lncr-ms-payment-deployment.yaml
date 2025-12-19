@@ -52,6 +52,11 @@ spec:
                 configMapKeyRef:
                   name: {{ .Values.app.name }}-config
                   key: MERCADOPAGO_EXPIRATION_TIME
+            - name: MERCADOPAGO_WEBHOOK_VALIDATION_SIGNATURE
+              valueFrom:
+                configMapKeyRef:
+                  name: { { .Values.app.name } }-config
+                  key: MERCADOPAGO_WEBHOOK_VALIDATION_SIGNATURE
             #secrets from SecretProviderClass
             {{- range .Values.secretProviderClass.keys }}
             - name: {{ . }}
