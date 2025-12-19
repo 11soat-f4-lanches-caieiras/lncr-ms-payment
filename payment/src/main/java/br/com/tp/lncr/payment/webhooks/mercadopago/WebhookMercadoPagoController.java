@@ -36,7 +36,7 @@ public class WebhookMercadoPagoController {
         CompletableFuture.runAsync(() -> webhookHandlerRouter.route(body, request, mercadoPagoConfig));
 
 
-        return ResponseEntityModelUtil.accepted(null);
+        return ResponseEntityModelUtil.ok(null);
     }
 
 }
