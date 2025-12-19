@@ -48,6 +48,7 @@ env:
   MERCADOPAGO_OAUTH_URL: ${{ vars.MERCADOPAGO_OAUTH_URL }}
   MERCADOPAGO_ORDERS_URL: ${{ vars.MERCADOPAGO_ORDERS_URL }}
   MERCADOPAGO_EXPIRATION_TIME: ${{ vars.MERCADOPAGO_EXPIRATION_TIME }}
+  MERCADOPAGO_WEBHOOK_VALIDATION_SIGNATURE: ${{ vars.MERCADOPAGO_WEBHOOK_VALIDATION_SIGNATURE }}
 
   #variáveis kubernetes
   MS_NAME: ${{ vars.MS_NAME }}
@@ -399,6 +400,7 @@ jobs:
             --set app.mercadoPago.oauthUrl="${{ env.MERCADOPAGO_OAUTH_URL }}"
             --set app.mercadoPago.ordersUrl="${{ env.MERCADOPAGO_ORDERS_URL }}"
             --set app.mercadoPago.expirationTime="${{ env.MERCADOPAGO_EXPIRATION_TIME }}"
+            --set app.mercadoPago.webhookValidationSignature="${{ env.MERCADOPAGO_WEBHOOK_VALIDATION_SIGNATURE }}"
             --set ingress.enabled="true"
             --set-string ingress.annotations."alb.ingress.kubernetes.io/subnets"="${ESCAPED_SUBNETS}"
             --set-string ingress.annotations."alb.ingress.kubernetes.io/security-groups"="${CLUSTER_SG}"
