@@ -11,7 +11,7 @@ data:
   MERCADOPAGO_OAUTH_URL: {{ .Values.app.mercadoPago.oauthUrl | quote }}
   MERCADOPAGO_ORDERS_URL: {{ .Values.app.mercadoPago.ordersUrl | quote }}
   MERCADOPAGO_EXPIRATION_TIME: {{ .Values.app.mercadoPago.expirationTime | quote }}
-  MERCADOPAGO_WEBHOOK_VALIDATION_SIGNATURE: {{ .Values.app.mercadoPago.webhookValidationSignature }}
+  MERCADOPAGO_WEBHOOK_VALIDATION_SIGNATURE: "{{ .Values.app.mercadoPago.webhookValidationSignature }}"
   JAVA_TOOL_OPTIONS: >-
     -XX:+UseContainerSupport
     -XX:MaxRAMPercentage=75.0
