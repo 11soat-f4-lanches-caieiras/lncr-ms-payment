@@ -11,7 +11,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
@@ -66,15 +68,20 @@ class MercadoPagoCallbackHandlerRouterTest {
             "user-123"
         );
 
+        Map<String, String> requestMap = new HashMap<>();
+        requestMap.put("queryString", "?source_news=webhooks");
+        requestMap.put("xSignature", "ts=123,v1=sig");
+        requestMap.put("requestId", "req-123");
+
         when(handler1.canHandle(callbackDTO)).thenReturn(true);
         when(handler2.canHandle(callbackDTO)).thenReturn(false);
 
         // Act
-        router.route(callbackDTO, request, mercadoPagoConfig);
+        router.route(callbackDTO, requestMap, mercadoPagoConfig);
 
         // Assert
         verify(handler1, times(1)).canHandle(callbackDTO);
-        verify(handler1, times(1)).handle(callbackDTO, request, mercadoPagoConfig);
+        verify(handler1, times(1)).handle(callbackDTO, requestMap, mercadoPagoConfig);
         verify(handler2, times(1)).canHandle(callbackDTO);
         verify(handler2, never()).handle(any(), any(), any());
     }
@@ -105,17 +112,22 @@ class MercadoPagoCallbackHandlerRouterTest {
             "user-123"
         );
 
+        Map<String, String> requestMap = new HashMap<>();
+        requestMap.put("queryString", "?source_news=webhooks");
+        requestMap.put("xSignature", "ts=123,v1=sig");
+        requestMap.put("requestId", "req-123");
+
         when(handler1.canHandle(callbackDTO)).thenReturn(false);
         when(handler2.canHandle(callbackDTO)).thenReturn(true);
 
         // Act
-        router.route(callbackDTO, request, mercadoPagoConfig);
+        router.route(callbackDTO, requestMap, mercadoPagoConfig);
 
         // Assert
         verify(handler1, times(1)).canHandle(callbackDTO);
         verify(handler1, never()).handle(any(), any(), any());
         verify(handler2, times(1)).canHandle(callbackDTO);
-        verify(handler2, times(1)).handle(callbackDTO, request, mercadoPagoConfig);
+        verify(handler2, times(1)).handle(callbackDTO, requestMap, mercadoPagoConfig);
     }
 
     @Test
@@ -144,15 +156,20 @@ class MercadoPagoCallbackHandlerRouterTest {
             "user-123"
         );
 
+        Map<String, String> requestMap = new HashMap<>();
+        requestMap.put("queryString", "?source_news=webhooks");
+        requestMap.put("xSignature", "ts=123,v1=sig");
+        requestMap.put("requestId", "req-123");
+
         when(handler1.canHandle(callbackDTO)).thenReturn(true);
         when(handler2.canHandle(callbackDTO)).thenReturn(true);
 
         // Act
-        router.route(callbackDTO, request, mercadoPagoConfig);
+        router.route(callbackDTO, requestMap, mercadoPagoConfig);
 
         // Assert
-        verify(handler1, times(1)).handle(callbackDTO, request, mercadoPagoConfig);
-        verify(handler2, times(1)).handle(callbackDTO, request, mercadoPagoConfig);
+        verify(handler1, times(1)).handle(callbackDTO, requestMap, mercadoPagoConfig);
+        verify(handler2, times(1)).handle(callbackDTO, requestMap, mercadoPagoConfig);
     }
 
     @Test
@@ -181,11 +198,16 @@ class MercadoPagoCallbackHandlerRouterTest {
             "user-123"
         );
 
+        Map<String, String> requestMap = new HashMap<>();
+        requestMap.put("queryString", "?source_news=webhooks");
+        requestMap.put("xSignature", "ts=123,v1=sig");
+        requestMap.put("requestId", "req-123");
+
         when(handler1.canHandle(callbackDTO)).thenReturn(false);
         when(handler2.canHandle(callbackDTO)).thenReturn(false);
 
         // Act
-        router.route(callbackDTO, request, mercadoPagoConfig);
+        router.route(callbackDTO, requestMap, mercadoPagoConfig);
 
         // Assert
         verify(handler1, times(1)).canHandle(callbackDTO);
@@ -223,8 +245,13 @@ class MercadoPagoCallbackHandlerRouterTest {
             "user-123"
         );
 
+        Map<String, String> requestMap = new HashMap<>();
+        requestMap.put("queryString", "?source_news=webhooks");
+        requestMap.put("xSignature", "ts=123,v1=sig");
+        requestMap.put("requestId", "req-123");
+
         // Act & Assert - should not throw exception and complete without errors
-        assertDoesNotThrow(() -> emptyRouter.route(callbackDTO, request, mercadoPagoConfig));
+        assertDoesNotThrow(() -> emptyRouter.route(callbackDTO, requestMap, mercadoPagoConfig));
     }
 }
 

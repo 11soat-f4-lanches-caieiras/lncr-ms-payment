@@ -12,8 +12,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -62,6 +63,8 @@ class WebhookMercadoPagoControllerTest {
         );
 
         when(httpServletRequest.getQueryString()).thenReturn("?source_news=webhooks");
+        when(httpServletRequest.getHeader("x-signature")).thenReturn("ts=123,v1=sig");
+        when(httpServletRequest.getHeader("x-request-id")).thenReturn("req-123");
 
         // Act
         ResponseEntity<ResponseModel<String>> response = controller.paymentMercadoPagoCallback(callbackDTO, httpServletRequest);
@@ -69,7 +72,11 @@ class WebhookMercadoPagoControllerTest {
         // Assert
         assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        verify(handlerRouter, timeout(1000).times(1)).route(callbackDTO, httpServletRequest, mercadoPagoConfig);
+        verify(handlerRouter, timeout(1000).times(1)).route(eq(callbackDTO), argThat(map ->
+            map.get("queryString").equals("?source_news=webhooks") &&
+            map.get("xSignature").equals("ts=123,v1=sig") &&
+            map.get("requestId").equals("req-123")
+        ), eq(mercadoPagoConfig));
     }
 
     @Test
@@ -99,6 +106,8 @@ class WebhookMercadoPagoControllerTest {
         );
 
         when(httpServletRequest.getQueryString()).thenReturn("?source_news=webhooks");
+        when(httpServletRequest.getHeader("x-signature")).thenReturn("ts=123,v1=sig");
+        when(httpServletRequest.getHeader("x-request-id")).thenReturn("req-123");
 
         // Act
         ResponseEntity<ResponseModel<String>> response = controller.paymentMercadoPagoCallback(callbackDTO, httpServletRequest);
@@ -135,6 +144,8 @@ class WebhookMercadoPagoControllerTest {
         );
 
         when(httpServletRequest.getQueryString()).thenReturn("?source_news=webhooks");
+        when(httpServletRequest.getHeader("x-signature")).thenReturn("ts=123,v1=sig");
+        when(httpServletRequest.getHeader("x-request-id")).thenReturn("req-123");
 
         // Act
         long startTime = System.currentTimeMillis();
@@ -176,6 +187,8 @@ class WebhookMercadoPagoControllerTest {
         );
 
         when(httpServletRequest.getQueryString()).thenReturn("?source_news=webhooks");
+        when(httpServletRequest.getHeader("x-signature")).thenReturn("ts=456,v1=sig2");
+        when(httpServletRequest.getHeader("x-request-id")).thenReturn("req-456");
 
         // Act
         ResponseEntity<ResponseModel<String>> response = controller.paymentMercadoPagoCallback(callbackDTO, httpServletRequest);

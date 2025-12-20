@@ -9,6 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
+
 @Component
 public class MercadoPagoAccreditedHandler implements MercadoPagoCallbackHandler{
 
@@ -27,13 +29,13 @@ public class MercadoPagoAccreditedHandler implements MercadoPagoCallbackHandler{
     }
 
     @Override
-    public void handle(MercadoPagoCallbackDTO callbackDTO, HttpServletRequest request, MercadoPagoConfig mercadoPagoConfig) {
+    public void handle(MercadoPagoCallbackDTO callbackDTO, Map<String,String> requestMap, MercadoPagoConfig mercadoPagoConfig) {
         log.info("Processando pagamento aprovado: {}", callbackDTO.data().externalReference());
         log.info("Webhook Validation Signature: {}", mercadoPagoConfig.isWebhookValidationSignature());
         if (mercadoPagoConfig.isWebhookValidationSignature()){
-            MercadoPagoWebhookUtils.validateCallbackSignature(callbackDTO, request, mercadoPagoConfig.getWebhookSecret());
+            MercadoPagoWebhookUtils.validateCallbackSignature(callbackDTO, requestMap, mercadoPagoConfig.getWebhookSecret());
         }
-        String url = integrationConfig.getPaymentsUrl() + "/paymentReceived?" + request.getQueryString();
+        String url = integrationConfig.getPaymentsUrl() + "/paymentReceived?" + requestMap.get("queryString");
         log.info("Roteando callback para URL interna: {}", url);
         log.info("Body: {}", callbackDTO);
         MercadoPagoWebhookUtils.routeCallback(callbackDTO, url);

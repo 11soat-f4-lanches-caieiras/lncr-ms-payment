@@ -10,6 +10,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @RestController
@@ -33,12 +35,16 @@ public class WebhookMercadoPagoController {
         log.info("Action: {}", body.action());
         log.info("Type: {}", body.type());
         log.info("External Reference: {}", body.data().externalReference());
-        log.info("Query String: {}", request.getQueryString());
-        log.info("X-Signature: {}", request.getHeader("x-signature"));
-        log.info("RequestId: {}", request.getHeader("x-request-id"));
+        Map<String,String> requestMap = new HashMap();
+        requestMap.put("queryString", request.getQueryString());
+        log.info("Query String: {}", requestMap.get("queryString"));
+        requestMap.put("xSignature", request.getHeader("x-signature"));
+        log.info("X-Signature: {}", requestMap.get("xSignature"));
+        requestMap.put("requestId", request.getHeader("x-request-id"));
+        log.info("RequestId: {}", requestMap.get("requestId"));
         log.info("==================================================");
 
-        CompletableFuture.runAsync(() -> webhookHandlerRouter.route(body, request, mercadoPagoConfig));
+        CompletableFuture.runAsync(() -> webhookHandlerRouter.route(body, requestMap, mercadoPagoConfig));
 
 
         return ResponseEntityModelUtil.ok(null);

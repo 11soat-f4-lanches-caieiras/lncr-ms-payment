@@ -1,21 +1,19 @@
 package br.com.tp.lncr.payment.webhooks.mercadopago;
 
-import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class MercadoPagoWebhookUtilsTest {
 
-    @Mock
-    private HttpServletRequest request;
 
     @Test
     void testValidateCallbackSignature_Valid() {
@@ -31,8 +29,9 @@ class MercadoPagoWebhookUtilsTest {
 
         String xSignature = String.format("ts=%s,v1=%s", ts, signature);
 
-        when(request.getHeader("x-signature")).thenReturn(xSignature);
-        when(request.getHeader("x-request-id")).thenReturn(requestId);
+        Map<String, String> requestMap = new HashMap<>();
+        requestMap.put("xSignature", xSignature);
+        requestMap.put("requestId", requestId);
 
         MercadoPagoCallbackDTO.Data data = new MercadoPagoCallbackDTO.Data(
             "ext-ref",
@@ -59,7 +58,7 @@ class MercadoPagoWebhookUtilsTest {
 
         // Act & Assert
         assertDoesNotThrow(() ->
-            MercadoPagoWebhookUtils.validateCallbackSignature(callbackDTO, request, secret)
+            MercadoPagoWebhookUtils.validateCallbackSignature(callbackDTO, requestMap, secret)
         );
     }
 
@@ -74,8 +73,9 @@ class MercadoPagoWebhookUtilsTest {
 
         String xSignature = String.format("ts=%s,v1=%s", ts, invalidSignature);
 
-        when(request.getHeader("x-signature")).thenReturn(xSignature);
-        when(request.getHeader("x-request-id")).thenReturn(requestId);
+        Map<String, String> requestMap = new HashMap<>();
+        requestMap.put("xSignature", xSignature);
+        requestMap.put("requestId", requestId);
 
         MercadoPagoCallbackDTO.Data data = new MercadoPagoCallbackDTO.Data(
             "ext-ref",
@@ -102,7 +102,7 @@ class MercadoPagoWebhookUtilsTest {
 
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () ->
-            MercadoPagoWebhookUtils.validateCallbackSignature(callbackDTO, request, secret)
+            MercadoPagoWebhookUtils.validateCallbackSignature(callbackDTO, requestMap, secret)
         );
     }
 
@@ -116,8 +116,9 @@ class MercadoPagoWebhookUtilsTest {
         // Arrange
         String secret = "test-secret-key";
 
-        when(request.getHeader("x-signature")).thenReturn(xSignature);
-        when(request.getHeader("x-request-id")).thenReturn(xRequestId);
+        Map<String, String> requestMap = new HashMap<>();
+        requestMap.put("xSignature", xSignature);
+        requestMap.put("requestId", xRequestId);
 
         MercadoPagoCallbackDTO.Data data = new MercadoPagoCallbackDTO.Data(
             "ext-ref",
@@ -144,7 +145,7 @@ class MercadoPagoWebhookUtilsTest {
 
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () ->
-            MercadoPagoWebhookUtils.validateCallbackSignature(callbackDTO, request, secret),
+            MercadoPagoWebhookUtils.validateCallbackSignature(callbackDTO, requestMap, secret),
             "Parâmetros de validação ausentes"
         );
     }
@@ -164,8 +165,9 @@ class MercadoPagoWebhookUtilsTest {
 
         String xSignature = String.format("ts=%s,v1=%s", ts, signature);
 
-        when(request.getHeader("x-signature")).thenReturn(xSignature);
-        when(request.getHeader("x-request-id")).thenReturn(requestId);
+        Map<String, String> requestMap = new HashMap<>();
+        requestMap.put("xSignature", xSignature);
+        requestMap.put("requestId", requestId);
 
         MercadoPagoCallbackDTO.Data data = new MercadoPagoCallbackDTO.Data(
             "ext-ref",
@@ -192,7 +194,7 @@ class MercadoPagoWebhookUtilsTest {
 
         // Act & Assert
         assertDoesNotThrow(() ->
-            MercadoPagoWebhookUtils.validateCallbackSignature(callbackDTO, request, secret)
+            MercadoPagoWebhookUtils.validateCallbackSignature(callbackDTO, requestMap, secret)
         );
     }
 

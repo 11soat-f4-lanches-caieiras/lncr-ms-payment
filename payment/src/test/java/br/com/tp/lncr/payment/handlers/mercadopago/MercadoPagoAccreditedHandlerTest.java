@@ -10,6 +10,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -212,9 +215,11 @@ class MercadoPagoAccreditedHandlerTest {
         String signature = new org.apache.commons.codec.digest.HmacUtils("HmacSHA256", secret).hmacHex(manifest);
         String xSignature = String.format("ts=%s,v1=%s", ts, signature);
 
-        lenient().when(request.getHeader("x-signature")).thenReturn(xSignature);
-        lenient().when(request.getHeader("x-request-id")).thenReturn(requestId);
-        when(request.getQueryString()).thenReturn(null);
+        Map<String, String> requestMap = new HashMap<>();
+        requestMap.put("queryString", null);
+        requestMap.put("xSignature", xSignature);
+        requestMap.put("requestId", requestId);
+
         lenient().when(mercadoPagoConfig.isWebhookValidationSignature()).thenReturn(false);
         lenient().when(mercadoPagoConfig.getWebhookSecret()).thenReturn(secret);
 
@@ -245,7 +250,7 @@ class MercadoPagoAccreditedHandlerTest {
         // Will throw IntegrationException when trying to route (expected in test context)
         assertDoesNotThrow(() -> {
             try {
-                handler.handle(callbackDTO, request, mercadoPagoConfig);
+                handler.handle(callbackDTO, requestMap, mercadoPagoConfig);
             } catch (Exception e) {
                 // Expected in test context without actual server for routing
                 if (!e.getMessage().contains("I/O error") && !e.getMessage().contains("Connection refused") && !e.getMessage().contains("Erro na integração")) {
@@ -260,9 +265,11 @@ class MercadoPagoAccreditedHandlerTest {
         // Arrange
         when(mercadoPagoConfig.isWebhookValidationSignature()).thenReturn(true);
         when(mercadoPagoConfig.getWebhookSecret()).thenReturn("test-secret");
-        when(request.getHeader("x-signature")).thenReturn("ts=123,v1=invalid-sig");
-        when(request.getHeader("x-request-id")).thenReturn("req-123");
-        lenient().when(request.getQueryString()).thenReturn(null);
+
+        Map<String, String> requestMap = new HashMap<>();
+        requestMap.put("queryString", null);
+        requestMap.put("xSignature", "ts=123,v1=invalid-sig");
+        requestMap.put("requestId", "req-123");
 
         MercadoPagoCallbackDTO.Data data = new MercadoPagoCallbackDTO.Data(
             "ext-ref-123",
@@ -289,7 +296,7 @@ class MercadoPagoAccreditedHandlerTest {
 
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () ->
-            handler.handle(callbackDTO, request, mercadoPagoConfig)
+            handler.handle(callbackDTO, requestMap, mercadoPagoConfig)
         );
     }
 
@@ -298,9 +305,11 @@ class MercadoPagoAccreditedHandlerTest {
         // Arrange
         when(mercadoPagoConfig.isWebhookValidationSignature()).thenReturn(true);
         when(mercadoPagoConfig.getWebhookSecret()).thenReturn("test-secret");
-        when(request.getHeader("x-signature")).thenReturn(null);
-        when(request.getHeader("x-request-id")).thenReturn("req-123");
-        lenient().when(request.getQueryString()).thenReturn(null);
+
+        Map<String, String> requestMap = new HashMap<>();
+        requestMap.put("queryString", null);
+        requestMap.put("xSignature", null);
+        requestMap.put("requestId", "req-123");
 
         MercadoPagoCallbackDTO.Data data = new MercadoPagoCallbackDTO.Data(
             "ext-ref-123",
@@ -327,7 +336,7 @@ class MercadoPagoAccreditedHandlerTest {
 
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () ->
-            handler.handle(callbackDTO, request, mercadoPagoConfig),
+            handler.handle(callbackDTO, requestMap, mercadoPagoConfig),
             "Parâmetros de validação ausentes"
         );
     }
