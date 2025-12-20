@@ -11,7 +11,7 @@ app:
   image:
     repository: ${AWS_ECR_REPOSITORY}
     tag: latest
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   port: 8080
   containerName: payment
   internalUrl: ${LNCR_INTERNAL_URL}
