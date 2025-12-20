@@ -48,10 +48,14 @@ public class MercadoPagoWebhookUtils {
 
         }
         String ts = extractSignatureValue(xSignature, "ts");
+        log.info("ts extraído: {}", ts);
         String v1 = extractSignatureValue(xSignature, "v1");
+        log.info("v1 extraído: {}", v1);
 
         String manifest = setManifest(dataId, xRequestId, ts);
+        log.info("Manifest criado: {}", manifest);
         String sha = createHMAC256Signature(secret, manifest);
+        log.info("SHA gerado: {}", sha);
 
         if (!isValidSignature(v1, sha)) {
             log.error("Assinatura inválida detectada no webhook do MercadoPago");

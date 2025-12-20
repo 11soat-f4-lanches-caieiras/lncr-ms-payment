@@ -34,6 +34,8 @@ public class WebhookMercadoPagoController {
         log.info("Type: {}", body.type());
         log.info("External Reference: {}", body.data().externalReference());
         log.info("Query String: {}", request.getQueryString());
+        log.info("X-Signature: {}", request.getHeader("x-signature"));
+        log.info("RequestId: {}", request.getHeader("x-request-id"));
         log.info("==================================================");
 
         CompletableFuture.runAsync(() -> webhookHandlerRouter.route(body, request, mercadoPagoConfig));
