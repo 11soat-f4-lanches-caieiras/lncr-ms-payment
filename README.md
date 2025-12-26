@@ -34,7 +34,7 @@ Microserviço responsável pelo gerenciamento de **Pagamentos** no sistema Lanch
 
 ## Sonar Quality Gate
 
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=11soat-f4-lanches-caieiras_lncr-ms-payment&metric=alert_status)](https://sonarcloud.io/project/overview?id=11soat-f4-lanches-caieiras_lncr-ms-payment)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=11soat-f4-lanches-caieiras_lncr-ms-payment&metric=alert_status&token=d48e0c482d2a8267eba87f08f90dec976262c13a)](https://sonarcloud.io/summary/new_code?id=11soat-f4-lanches-caieiras_lncr-ms-payment)
 
 Acesse o dashboard completo: [SonarCloud - lncr-ms-payment](https://sonarcloud.io/project/overview?id=11soat-f4-lanches-caieiras_lncr-ms-payment)
 

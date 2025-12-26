@@ -18,6 +18,17 @@ on:
         default: false
         type: boolean
 
+  push:
+    branches:
+      - develop
+    paths:
+      - 'payment/src/**'
+
+  pull_request:
+    types: [closed]
+    branches:
+      - master
+
   workflow_call:
     inputs:
       branch:
@@ -71,7 +82,7 @@ jobs:
     name: Validação Construção e Upload da Imagem Docker
     runs-on: ${{ vars.AWS_CODE_BUILD }}-${{ github.run_id }}-${{ github.run_attempt }}
     #Disparado via repository_dispatch do repositório lncr-iac
-    if: ${{ (github.event_name == 'workflow_dispatch' || github.event_name == 'repository_dispatch') && !inputs.only-helm-deploy }}
+    if: ${{ ((github.event_name == 'workflow_dispatch' || github.event_name == 'repository_dispatch') && !inputs.only-helm-deploy) || (github.event_name == 'pull_request' && github.event.pull_request.merged == true) || github.event_name == 'push' }}
     environment:
       name: ${{ github.ref_name == 'master' && 'prd' || 'dev' }}
     steps:
@@ -228,7 +239,7 @@ jobs:
     name: Manual Approval (after build)
     runs-on: ubuntu-latest
     needs: build-and-upload
-    if: ${{ !inputs.only-helm-deploy }}
+    if: ${{ !inputs.only-helm-deploy || github.event_name == 'pull_request' || github.event_name == 'push' }}
     steps:
       - name: Manual Approval
         uses: trstringer/manual-approval@v1
